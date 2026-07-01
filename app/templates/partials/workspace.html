@@ -1,6 +1,6 @@
 {% if project %}
-<div class="workspace-grid">
-  <section class="card">
+<section class="card map-panel">
+  <div class="graph-wrap">
     <div class="section-heading">
       <div>
         <h2>{{ project.title }}</h2>
@@ -8,205 +8,164 @@
         <p class="muted">{{ project.description }}</p>
         {% endif %}
       </div>
-      <span class="pill">{{ project.candidates|length }} candidates</span>
+      <div class="chip-row">
+        <span class="pill">{{ accepted_count }} accepted</span>
+        <span class="pill">{{ project.expansion_candidates|length }} queued</span>
+      </div>
     </div>
+    <div>{{ graph_svg|safe }}</div>
+    <div class="acquisition-grid">
+      <div class="mini-stat"><span>Accepted</span><strong>{{ accepted_count }}</strong></div>
+      <div class="mini-stat"><span>Deferred</span><strong>{{ deferred_count }}</strong></div>
+      <div class="mini-stat"><span>Rejected</span><strong>{{ rejected_count }}</strong></div>
+      <div class="mini-stat"><span>Search scope</span><strong>{{ fixed_search_limit }} results</strong></div>
+    </div>
+    <div class="timeline-row">
+      <strong>Map interaction</strong>
+      <p class="muted">Paper nodes and links are now clickable entry points into the review panel. This keeps the graph ready for richer interactive editing without hiding today’s local-first workflow.</p>
+    </div>
+  </div>
+</section>
 
+<aside class="workspace-right">
+  <section class="card">
+    <div class="toolbar-row">
+      <div>
+        <h3>Search</h3>
+        <p class="muted">Fixed to the top {{ fixed_search_limit }} ranked results for a tighter review loop.</p>
+      </div>
+      <span class="pill">{{ project.candidates|length }} cached</span>
+    </div>
     <form class="search-form" hx-post="/projects/{{ project.project_id }}/search" hx-target="#workspace" hx-swap="innerHTML">
       <label>
-        Search literature
-        <input type="text" name="query" value="{{ search_query or '' }}" placeholder="e.g. iron oxide transport" required>
-      </label>
-      <label>
-        Limit
-        <input type="number" name="limit" value="12" min="1" max="50">
+        Literature query
+        <input type="text" name="query" value="{{ search_query or '' }}" placeholder="e.g. immiscibility core mercury" required>
       </label>
       <button class="btn btn-primary" type="submit">Search</button>
     </form>
-
     {% if search_error %}
     <div class="export-banner">{{ search_error }}</div>
     {% endif %}
-
     {% if project.candidates %}
-    <div class="stack">
+    <div class="results-scroll">
       {% for candidate in project.candidates %}
-      <button
-        class="candidate-row {% if selected_candidate and candidate.candidate_id == selected_candidate.candidate_id %}candidate-row--active{% endif %}"
-        hx-get="/projects/{{ project.project_id }}/workspace?selected={{ candidate.candidate_id }}"
-        hx-target="#workspace"
-        hx-swap="innerHTML"
-        type="button"
-      >
-        <div>
-          <strong>{{ candidate.title }}</strong>
-          <p>
-            {% if candidate.authors %}{{ candidate.authors[:4]|join(', ') }}{% else %}Unknown authors{% endif %}
-            {% if candidate.year %} · {{ candidate.year }}{% endif %}
-            {% if candidate.journal %} · {{ candidate.journal }}{% endif %}
-          </p>
-          {% if candidate.doi %}<small>DOI: {{ candidate.doi }}</small>{% endif %}
+      <details class="result-card" {% if selected_candidate and candidate.candidate_id == selected_candidate.candidate_id %}open{% endif %}>
+        <summary>
+          <div>
+            <strong>{{ candidate.title }}</strong>
+            <p class="candidate-meta">
+              {% if candidate.authors %}{{ candidate.authors[:4]|join(', ') }}{% else %}Unknown authors{% endif %}
+              {% if candidate.year %} · {{ candidate.year }}{% endif %}
+              {% if candidate.journal %} · {{ candidate.journal }}{% endif %}
+            </p>
+            {% if candidate.doi %}<small>DOI: {{ candidate.doi }}</small>{% endif %}
+          </div>
+          <span class="decision-badge {% if candidate.decision.value == 'yes' %}decision-yes{% elif candidate.decision.value == 'no' %}decision-no{% elif candidate.decision.value == 'defer' %}decision-defer{% endif %}">
+            {{ candidate.decision.value }}
+          </span>
+        </summary>
+        <div class="result-card-body">
+          <div class="chip-row">
+            <span class="chip">PDF: {{ candidate.pdf_status }}</span>
+            <span class="chip">SI: {{ candidate.si_status }}</span>
+            {% if candidate.year %}<span class="chip">Year: {{ candidate.year }}</span>{% endif %}
+          </div>
+
+          {% if candidate.abstract %}
+          <div class="timeline-row">
+            <strong>Abstract</strong>
+            <p>{{ candidate.abstract }}</p>
+          </div>
+          {% else %}
+          <div class="timeline-row">
+            <strong>Review notes</strong>
+            <p class="muted">Expand a candidate, inspect the metadata, then record a deliberate accept / reject / defer decision to control map growth.</p>
+          </div>
+          {% endif %}
+
+          <form class="decision-actions" hx-post="/projects/{{ project.project_id }}/candidates/{{ candidate.candidate_id }}/decision" hx-target="#workspace" hx-swap="innerHTML">
+            <input type="hidden" name="query" value="{{ search_query or '' }}">
+            <button class="btn btn-success" type="submit" name="decision" value="yes">Accept</button>
+            <button class="btn btn-warning" type="submit" name="decision" value="defer">Defer</button>
+            <button class="btn btn-danger" type="submit" name="decision" value="no">Reject</button>
+          </form>
+
+          <div class="chip-row">
+            <button
+              class="btn btn-quiet"
+              hx-get="/projects/{{ project.project_id }}/workspace?selected={{ candidate.candidate_id }}"
+              hx-target="#workspace"
+              hx-swap="innerHTML"
+              type="button"
+            >
+              Focus in map
+            </button>
+            {% if candidate.doi %}
+            <a class="btn btn-quiet" href="https://doi.org/{{ candidate.doi }}" target="_blank" rel="noopener noreferrer">Open DOI</a>
+            <a class="btn btn-quiet" href="https://api.openalex.org/works?filter=doi:https://doi.org/{{ candidate.doi }}" target="_blank" rel="noopener noreferrer">OpenAlex</a>
+            {% else %}
+            <a class="btn btn-quiet" href="https://api.openalex.org/works?search={{ candidate.title|urlencode }}" target="_blank" rel="noopener noreferrer">Search OpenAlex</a>
+            <a class="btn btn-quiet" href="https://api.crossref.org/works?query={{ candidate.title|urlencode }}" target="_blank" rel="noopener noreferrer">Search Crossref</a>
+            {% endif %}
+          </div>
         </div>
-        <span class="decision-badge {% if candidate.decision.value == 'yes' %}decision-yes{% elif candidate.decision.value == 'no' %}decision-no{% elif candidate.decision.value == 'defer' %}decision-defer{% endif %}">
-          {{ candidate.decision.value }}
-        </span>
-      </button>
+      </details>
       {% endfor %}
     </div>
     {% else %}
     <div class="empty-state">
       <h3>No search results yet</h3>
-      <p class="muted">Run a search to populate candidates for this project, then select a paper to review or accept.</p>
+      <p class="muted">Run a search to populate candidates, then expand a result on the right to review it and take action.</p>
     </div>
     {% endif %}
   </section>
 
-  <section class="card graph-wrap">
-    <div class="section-heading">
-      <h3>Map / graph</h3>
-      <span class="pill">{{ accepted_count }} accepted</span>
-    </div>
-    <div>{{ graph_svg|safe }}</div>
-    <div class="acquisition-grid">
-      <div class="mini-stat">
-        <span>Accepted</span>
-        <strong>{{ accepted_count }}</strong>
-      </div>
-      <div class="mini-stat">
-        <span>Deferred</span>
-        <strong>{{ deferred_count }}</strong>
-      </div>
-      <div class="mini-stat">
-        <span>Rejected</span>
-        <strong>{{ rejected_count }}</strong>
-      </div>
-      <div class="mini-stat">
-        <span>Expansion queue</span>
-        <strong>{{ project.expansion_candidates|length }}</strong>
-      </div>
-    </div>
-  </section>
-
-  <section class="card">
-    <div class="section-heading">
-      <h3>Review / web</h3>
-      {% if selected_candidate %}
-      <span class="pill">Selected</span>
-      {% endif %}
-    </div>
-
-    {% if selected_candidate %}
-    <div class="stack">
-      <div>
-        <h4>{{ selected_candidate.title }}</h4>
-        <p class="muted">
-          {% if selected_candidate.authors %}{{ selected_candidate.authors|join(', ') }}{% else %}Unknown authors{% endif %}
-          {% if selected_candidate.year %} · {{ selected_candidate.year }}{% endif %}
-        </p>
-        {% if selected_candidate.journal %}<p class="muted">{{ selected_candidate.journal }}</p>{% endif %}
-        {% if selected_candidate.doi %}<p><code>{{ selected_candidate.doi }}</code></p>{% endif %}
-      </div>
-
-      <form class="decision-actions" hx-post="/projects/{{ project.project_id }}/candidates/{{ selected_candidate.candidate_id }}/decision" hx-target="#workspace" hx-swap="innerHTML">
-        <input type="hidden" name="query" value="{{ search_query or '' }}">
-        <button class="btn btn-success" type="submit" name="decision" value="yes">Accept</button>
-        <button class="btn btn-warning" type="submit" name="decision" value="defer">Defer</button>
-        <button class="btn btn-danger" type="submit" name="decision" value="no">Reject</button>
-      </form>
-
-      <div class="chip-row">
-        <span class="chip">PDF: {{ selected_candidate.pdf_status }}</span>
-        <span class="chip">SI: {{ selected_candidate.si_status }}</span>
-        <span class="chip">Decision: {{ selected_candidate.decision.value }}</span>
-      </div>
-
-      {% if selected_candidate.abstract %}
-      <div class="timeline-row">
-        <strong>Abstract</strong>
-        <p>{{ selected_candidate.abstract }}</p>
-      </div>
-      {% else %}
-      <div class="timeline-row">
-        <strong>Notes</strong>
-        <p class="muted">Use the decision buttons to control graph growth deliberately. Accepted papers will appear in the map and seed the expansion queue.</p>
-      </div>
-      {% endif %}
-
-      <div class="timeline-row">
-        <strong>Web links</strong>
-        <div class="chip-row">
-          {% if selected_candidate.doi %}
-          <a class="btn" href="https://doi.org/{{ selected_candidate.doi }}" target="_blank" rel="noopener noreferrer">Open DOI</a>
-          <a class="btn" href="https://api.openalex.org/works?filter=doi:https://doi.org/{{ selected_candidate.doi }}" target="_blank" rel="noopener noreferrer">OpenAlex</a>
-          {% else %}
-          <a class="btn" href="https://api.openalex.org/works?search={{ selected_candidate.title|urlencode }}" target="_blank" rel="noopener noreferrer">Search OpenAlex</a>
-          <a class="btn" href="https://api.crossref.org/works?query={{ selected_candidate.title|urlencode }}" target="_blank" rel="noopener noreferrer">Search Crossref</a>
-          {% endif %}
-        </div>
-      </div>
-    </div>
-    {% else %}
-    <div class="empty-state">
-      <h3>No paper selected</h3>
-      <p class="muted">Select a search result to review it, open its web links, and record a decision.</p>
-    </div>
-    {% endif %}
-  </section>
-</div>
-
-<div class="workspace-grid workspace-grid--bottom">
-  <section class="card">
-    <div class="section-heading">
-      <h3>Retrieval / accepted papers</h3>
-      <span class="pill">{{ retrieval_items|length }} tracked</span>
-    </div>
-    {% if retrieval_items %}
-      <div class="stack compact">
-      {% for item in retrieval_items %}
+  <details class="card" open>
+    <summary><strong>Retrieval tracking</strong></summary>
+    <div class="stack compact" style="margin-top: 14px;">
+      {% if retrieval_items %}
+        {% for item in retrieval_items %}
         <div class="retrieval-row">
           <strong>{{ item.title }}</strong>
-          <p>PDF: {{ item.pdf_status }} | SI: {{ item.si_status }}</p>
+          <p>Decision: {{ item.decision.value }} · PDF: {{ item.pdf_status }} · SI: {{ item.si_status }}</p>
           <form hx-post="/projects/{{ project.project_id }}/upload_pdf" enctype="multipart/form-data">
             <input type="hidden" name="cid" value="{{ item.candidate_id }}">
-            <input type="file" name="file"><button>Upload PDF</button>
+            <input type="file" name="file"><button class="btn btn-quiet" type="submit">Upload PDF</button>
           </form>
           <form hx-post="/projects/{{ project.project_id }}/upload_si" enctype="multipart/form-data">
             <input type="hidden" name="cid" value="{{ item.candidate_id }}">
-            <input type="file" name="file"><button>Upload SI</button>
+            <input type="file" name="file"><button class="btn btn-quiet" type="submit">Upload SI</button>
           </form>
         </div>
-      {% endfor %}
-      </div>
-    {% else %}
-      <p class="muted">Accepted papers and retrieval tracking will populate here as you build the map.</p>
-    {% endif %}
-  </section>
-
-  <section class="card">
-    <div class="section-heading">
-      <h3>Expansion queue</h3>
-      <span class="pill">{{ project.expansion_candidates|length }}</span>
+        {% endfor %}
+      {% else %}
+        <p class="muted">Retrieval tracking fills in as papers are reviewed and gathered locally.</p>
+      {% endif %}
     </div>
-    {% if project.expansion_candidates %}
-      <div class="stack compact">
-      {% for item in project.expansion_candidates %}
+  </details>
+
+  <details class="card" open>
+    <summary><strong>Expansion queue</strong></summary>
+    <div class="stack compact" style="margin-top: 14px;">
+      {% if project.expansion_candidates %}
+        {% for item in project.expansion_candidates %}
         <div class="timeline-row">
           <strong>{{ item.title }}</strong>
           <p class="muted">Generated from {{ item.source_type }} for {{ item.source }}</p>
         </div>
-      {% endfor %}
-      </div>
-    {% else %}
-      <p class="muted">No queued expansion candidates yet. Accepting a paper can seed citation and author-related expansion here.</p>
-    {% endif %}
-
-    <form hx-post="/projects/{{ project.project_id }}/export">
-      <button class="btn" type="submit">Export Project</button>
-    </form>
-  </section>
-</div>
+        {% endfor %}
+      {% else %}
+        <p class="muted">No queued expansion candidates yet. Accepting a paper can seed citation and author-related expansion here.</p>
+      {% endif %}
+      <form hx-post="/projects/{{ project.project_id }}/export">
+        <button class="btn" type="submit">Export Project</button>
+      </form>
+    </div>
+  </details>
+</aside>
 {% else %}
-<section class="card empty-state">
+<section class="card empty-state" style="grid-column: 1 / -1;">
   <h2>No project selected</h2>
-  <p class="muted">Create a project from the sidebar to start a local-first literature map.</p>
+  <p class="muted">Create a project from the left rail to start a local-first literature map.</p>
 </section>
 {% endif %}

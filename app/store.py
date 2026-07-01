@@ -18,6 +18,11 @@ class ProjectStore:
         self.save(project)
         return project
 
+    def delete_project(self, pid):
+        path = self.path(pid)
+        if path.exists():
+            path.unlink()
+
     def list_projects(self):
         projects = []
         for path in sorted(self.projects_dir.glob("*.json")):
@@ -45,6 +50,7 @@ class ProjectStore:
                     "pdf_status": candidate.pdf_status,
                     "si_status": candidate.si_status,
                     "doi": candidate.doi,
+                    "decision": candidate.decision,
                 }
             )
         return items

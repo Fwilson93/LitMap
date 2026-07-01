@@ -19,6 +19,8 @@ app = FastAPI()
 templates = Jinja2Templates(directory="app/templates")
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
+FIXED_SEARCH_LIMIT = 8
+
 
 def _resolve_selected_candidate(project, selected_candidate_id: str = ""):
     if not project or not project.candidates:
@@ -46,7 +48,13 @@ def _merge_expansion_candidates(project, incoming) -> None:
         seen.add(item.candidate_id)
 
 
-def _workspace_context(project=None, *, query: str = "", search_error: str = "", selected_candidate_id: str = ""):
+def _workspace_context(
+    project=None,
+    *,
+    query: str = "",
+    search_error: str = "",
+    selected_candidate_id: str = "",
+):
     projects = store.list_projects()
     selected_candidate = _resolve_selected_candidate(project, selected_candidate_id)
     graph_svg = ""
@@ -54,6 +62,7 @@ def _workspace_context(project=None, *, query: str = "", search_error: str = "",
         graph_svg = render_graph_svg(
             project.graph,
             selected_candidate.candidate_id if selected_candidate else None,
+            project.project_id,
         )
     accepted_count = 0
     deferred_count = 0
@@ -75,6 +84,7 @@ def _workspace_context(project=None, *, query: str = "", search_error: str = "",
         "accepted_count": accepted_count,
         "deferred_count": deferred_count,
         "rejected_count": rejected_count,
+        "fixed_search_limit": FIXED_SEARCH_LIMIT,
     }
 
 
@@ -84,11 +94,7 @@ def index(request: Request):
     project = projects[0] if projects else None
     context = _workspace_context(project)
     context["request"] = request
-    return templates.TemplateResponse(
-        request=request,
-        name="page.html",
-        context=context,
-    )
+    return templates.TemplateResponse(request=request, name="page.html", context=context)
 
 
 @app.post("/projects", response_class=HTMLResponse)
@@ -96,11 +102,17 @@ def create_project(request: Request, title: str = Form(...), description: str = 
     project = store.create_project(title, description)
     context = _workspace_context(project)
     context["request"] = request
-    return templates.TemplateResponse(
-        request=request,
-        name="partials/workspace_bundle.html",
-        context=context,
-    )
+    return templates.TemplateResponse(request=request, name="partials/workspace_bundle.html", context=context)
+
+
+@app.post("/projects/{pid}/delete", response_class=HTMLResponse)
+def delete_project(request: Request, pid: str):
+    store.delete_project(pid)
+    projects = store.list_projects()
+    project = projects[0] if projects else None
+    context = _workspace_context(project)
+    context["request"] = request
+    return templates.TemplateResponse(request=request, name="partials/workspace_bundle.html", context=context)
 
 
 @app.get("/projects/{pid}/workspace", response_class=HTMLResponse)
@@ -108,19 +120,26 @@ def project_workspace(request: Request, pid: str, selected: str = ""):
     project = store.get(pid)
     context = _workspace_context(project, selected_candidate_id=selected)
     context["request"] = request
-    return templates.TemplateResponse(
-        request=request,
-        name="partials/workspace_bundle.html",
-        context=context,
-    )
+    return templates.TemplateResponse(request=request, name="partials/workspace_bundle.html", context=context)
 
 
 @app.post("/projects/{pid}/search", response_class=HTMLResponse)
-def search_project(request: Request, pid: str, query: str = Form(...), limit: int = Form(12)):
+def search_project(
+    request: Request,
+    pid: str,
+    query: str = Form(...),
+    limit: int | None = Form(default=None),
+):
     project = store.get(pid)
     search_error = ""
+    effective_limit = FIXED_SEARCH_LIMIT
+    if limit is not None:
+        try:
+            effective_limit = FIXED_SEARCH_LIMIT if int(limit) <= 0 else min(int(limit), FIXED_SEARCH_LIMIT)
+        except Exception:
+            effective_limit = FIXED_SEARCH_LIMIT
     try:
-        results = run_search(query, limit=limit)
+        results = run_search(query, limit=effective_limit)
     except Exception as exc:
         results = []
         search_error = f"Search failed: {exc}"
@@ -134,11 +153,7 @@ def search_project(request: Request, pid: str, query: str = Form(...), limit: in
         selected_candidate_id=selected_candidate_id,
     )
     context["request"] = request
-    return templates.TemplateResponse(
-        request=request,
-        name="partials/workspace_bundle.html",
-        context=context,
-    )
+    return templates.TemplateResponse(request=request, name="partials/workspace_bundle.html", context=context)
 
 
 @app.post("/projects/{pid}/candidates/{cid}/decision", response_class=HTMLResponse)
@@ -151,22 +166,29 @@ def decide_candidate(
 ):
     project = store.get(pid)
     candidate = project.set_decision(cid, Decision(decision))
+    search_error = ""
     if candidate.decision == Decision.YES:
         update_graph_for_candidate(project, candidate)
-        _merge_expansion_candidates(project, expand_from_candidate(candidate, limit=8))
+        try:
+            expanded = expand_from_candidate(candidate, limit=FIXED_SEARCH_LIMIT)
+        except Exception as exc:
+            expanded = []
+            search_error = f"Expansion warning: {exc}"
+        _merge_expansion_candidates(project, expanded)
         project.expansion_candidates = [
             item
             for item in project.expansion_candidates
             if item.candidate_id not in {cid, f"exp-{cid}"}
         ]
     store.save(project)
-    context = _workspace_context(project, query=query, selected_candidate_id=cid)
-    context["request"] = request
-    return templates.TemplateResponse(
-        request=request,
-        name="partials/workspace_bundle.html",
-        context=context,
+    context = _workspace_context(
+        project,
+        query=query,
+        search_error=search_error,
+        selected_candidate_id=cid,
     )
+    context["request"] = request
+    return templates.TemplateResponse(request=request, name="partials/workspace_bundle.html", context=context)
 
 
 @app.post("/projects/{pid}/upload_pdf")
@@ -213,13 +235,7 @@ def export_project(pid: str):
             continue
         if candidate.local_pdf_path:
             shutil.copy(candidate.local_pdf_path, papers_dir)
-        metadata.append(
-            {
-                "title": candidate.title,
-                "doi": candidate.doi,
-                "pdf": candidate.local_pdf_path,
-            }
-        )
+        metadata.append({"title": candidate.title, "doi": candidate.doi, "pdf": candidate.local_pdf_path})
     with open(output_dir / "metadata.json", "w") as handle:
         json.dump(metadata, handle, indent=2)
     return "ok"

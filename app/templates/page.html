@@ -17,14 +17,16 @@
           <p class="muted">Search, review, map, retrieve, export.</p>
         </div>
         {% include 'partials/project_list.html' %}
-        <section class="card create-project">
-          <h2>New project</h2>
-          <form hx-post="/projects" hx-target="#workspace" hx-swap="innerHTML">
-            <label>Title<input type="text" name="title" placeholder="Core transport map" required></label>
-            <label>Description<textarea name="description" rows="3" placeholder="Optional scope notes"></textarea></label>
-            <button class="btn btn-primary" type="submit">Create project</button>
-          </form>
-        </section>
+        <details class="rail-section" open>
+          <summary>New project</summary>
+          <div class="rail-section-body">
+            <form hx-post="/projects" hx-target="#workspace" hx-swap="innerHTML" class="stack compact">
+              <label>Title<input type="text" name="title" placeholder="Core transport map" required></label>
+              <label>Description<textarea name="description" rows="3" placeholder="Optional scope notes"></textarea></label>
+              <button class="btn btn-primary" type="submit">Create project</button>
+            </form>
+          </div>
+        </details>
       </aside>
       <main id="workspace" class="workspace">
         {% include 'partials/workspace.html' %}

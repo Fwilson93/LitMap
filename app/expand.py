@@ -7,50 +7,62 @@ ss = SemanticScholarProvider()
 openalex = OpenAlexProvider()
 crossref = CrossrefProvider()
 
-def expand_from_candidate(candidate: Candidate, limit:int=8):
-    results=[]
-    seen=set()
 
-    # --- REAL citations ---
+def expand_from_candidate(candidate: Candidate, limit: int = 8):
+    results = []
+    seen = set()
+
     graph = ss.fetch_graph(candidate.doi) if candidate.doi else {}
+    if not isinstance(graph, dict):
+        graph = {}
 
-    for section, stype in [("references","citation"),("citations","citation")]:
-        for item in graph.get(section,[])[:limit]:
+    for section, source_type in [("references", "citation"), ("citations", "citation")]:
+        section_items = graph.get(section) or []
+        if not isinstance(section_items, list):
+            section_items = []
+        for item in section_items[:limit]:
             c = ss.to_candidate(item)
             key = c.doi or c.title
-            if key in seen: continue
+            if not key or key in seen:
+                continue
             seen.add(key)
-            results.append(ExpansionCandidate(
-                candidate_id=f"exp-{c.candidate_id}",
-                title=c.title,
-                source=candidate.candidate_id,
-                source_type="citation"
-            ))
+            results.append(
+                ExpansionCandidate(
+                    candidate_id=f"exp-{c.candidate_id}",
+                    title=c.title,
+                    source=candidate.candidate_id,
+                    source_type=source_type,
+                )
+            )
 
-    # --- AUTHOR expansion ---
     if candidate.authors:
-        for r in openalex.search(candidate.authors[0], limit//2):
+        for r in openalex.search(candidate.authors[0], max(limit // 2, 1)):
             key = r.doi or r.title
-            if key in seen: continue
+            if not key or key in seen:
+                continue
             seen.add(key)
-            results.append(ExpansionCandidate(
-                candidate_id=f"exp-{r.candidate_id}",
-                title=r.title,
-                source=candidate.candidate_id,
-                source_type="author"
-            ))
+            results.append(
+                ExpansionCandidate(
+                    candidate_id=f"exp-{r.candidate_id}",
+                    title=r.title,
+                    source=candidate.candidate_id,
+                    source_type="author",
+                )
+            )
 
-    # --- fallback ---
     if not results:
         for r in crossref.search(candidate.title, limit):
             key = r.doi or r.title
-            if key in seen: continue
+            if not key or key in seen:
+                continue
             seen.add(key)
-            results.append(ExpansionCandidate(
-                candidate_id=f"exp-{r.candidate_id}",
-                title=r.title,
-                source=candidate.candidate_id,
-                source_type="fallback"
-            ))
+            results.append(
+                ExpansionCandidate(
+                    candidate_id=f"exp-{r.candidate_id}",
+                    title=r.title,
+                    source=candidate.candidate_id,
+                    source_type="fallback",
+                )
+            )
 
     return results[:limit]

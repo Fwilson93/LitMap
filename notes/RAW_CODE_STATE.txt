@@ -6,12 +6,12 @@ Max file bytes: 80000
 ===== FILE MANIFEST =====
 
 README.md | size=1825 bytes [priority]
-README_APPLY_ME.txt | size=592 bytes
+README_APPLY_ME.txt | size=876 bytes
 app/__init__.py | size=0 bytes
 app/config.py | size=709 bytes
-app/expand.py | size=1921 bytes
-app/graph.py | size=4091 bytes [priority]
-app/main.py | size=7935 bytes [priority]
+app/expand.py | size=2275 bytes
+app/graph.py | size=5674 bytes [priority]
+app/main.py | size=8814 bytes [priority]
 app/models.py | size=3996 bytes [priority]
 app/providers/base.py | size=219 bytes
 app/providers/crossref.py | size=1624 bytes
@@ -19,12 +19,12 @@ app/providers/mock.py | size=9 bytes
 app/providers/openalex.py | size=1637 bytes
 app/providers/semantic_scholar.py | size=1008 bytes
 app/search.py | size=4535 bytes [priority]
-app/static/app.css | size=5402 bytes
+app/static/app.css | size=7782 bytes
 app/static/app.js | size=180 bytes
-app/store.py | size=1702 bytes [priority]
-app/templates/page.html | size=1375 bytes
-app/templates/partials/project_list.html | size=648 bytes
-app/templates/partials/workspace.html | size=8651 bytes
+app/store.py | size=1872 bytes [priority]
+app/templates/page.html | size=1474 bytes
+app/templates/partials/project_list.html | size=1133 bytes
+app/templates/partials/workspace.html | size=8205 bytes
 app/templates/partials/workspace_bundle.html | size=136 bytes
 first_statup.txt | size=137 bytes
 litmap_slim.egg-info/SOURCES.txt | size=681 bytes
@@ -129,20 +129,28 @@ uvicorn app.main:app --reload
 ===== FILE: README_APPLY_ME.txt =====
 
 Path: README_APPLY_ME.txt
-Size: 592 bytes
+Size: 876 bytes
 ```txt
-LitMap Slim interactive workspace fix bundle
+LitMap Slim layout + stability bundle
 
 Included replacement files:
+- app/expand.py
+- app/graph.py
 - app/main.py
+- app/static/app.css
+- app/store.py
+- app/templates/page.html
+- app/templates/partials/project_list.html
 - app/templates/partials/workspace.html
 
 What this changes:
-- restores clickable search results using a selection panel
-- adds Accept / Defer / Reject actions for selected papers
-- updates the graph immediately when a paper is accepted
-- seeds the expansion queue from accepted papers
-- restores a visible map/graph panel and a review/web panel
+- fixes the expansion crash caused by Semantic Scholar sections returning null
+- gives the map the centre half of the view with a larger canvas
+- keeps projects and new-project controls collapsible on the left rail
+- adds delete buttons for existing projects
+- moves search + expandable review cards to the right rail
+- fixes the search UI to a fixed top-8 result loop
+- makes paper nodes and graph links clickable entry points into review
 
 Apply by copying these files into the repository root, preserving paths.
 
@@ -199,7 +207,7 @@ def get_settings() -> Settings:
 ===== FILE: app/expand.py =====
 
 Path: app/expand.py
-Size: 1921 bytes
+Size: 2275 bytes
 ```py
 from app.providers.semantic_scholar import SemanticScholarProvider
 from app.providers.openalex import OpenAlexProvider
@@ -210,51 +218,63 @@ ss = SemanticScholarProvider()
 openalex = OpenAlexProvider()
 crossref = CrossrefProvider()
 
-def expand_from_candidate(candidate: Candidate, limit:int=8):
-    results=[]
-    seen=set()
 
-    # --- REAL citations ---
+def expand_from_candidate(candidate: Candidate, limit: int = 8):
+    results = []
+    seen = set()
+
     graph = ss.fetch_graph(candidate.doi) if candidate.doi else {}
+    if not isinstance(graph, dict):
+        graph = {}
 
-    for section, stype in [("references","citation"),("citations","citation")]:
-        for item in graph.get(section,[])[:limit]:
+    for section, source_type in [("references", "citation"), ("citations", "citation")]:
+        section_items = graph.get(section) or []
+        if not isinstance(section_items, list):
+            section_items = []
+        for item in section_items[:limit]:
             c = ss.to_candidate(item)
             key = c.doi or c.title
-            if key in seen: continue
+            if not key or key in seen:
+                continue
             seen.add(key)
-            results.append(ExpansionCandidate(
-                candidate_id=f"exp-{c.candidate_id}",
-                title=c.title,
-                source=candidate.candidate_id,
-                source_type="citation"
-            ))
+            results.append(
+                ExpansionCandidate(
+                    candidate_id=f"exp-{c.candidate_id}",
+                    title=c.title,
+                    source=candidate.candidate_id,
+                    source_type=source_type,
+                )
+            )
 
-    # --- AUTHOR expansion ---
     if candidate.authors:
-        for r in openalex.search(candidate.authors[0], limit//2):
+        for r in openalex.search(candidate.authors[0], max(limit // 2, 1)):
             key = r.doi or r.title
-            if key in seen: continue
+            if not key or key in seen:
+                continue
             seen.add(key)
-            results.append(ExpansionCandidate(
-                candidate_id=f"exp-{r.candidate_id}",
-                title=r.title,
-                source=candidate.candidate_id,
-                source_type="author"
-            ))
+            results.append(
+                ExpansionCandidate(
+                    candidate_id=f"exp-{r.candidate_id}",
+                    title=r.title,
+                    source=candidate.candidate_id,
+                    source_type="author",
+                )
+            )
 
-    # --- fallback ---
     if not results:
         for r in crossref.search(candidate.title, limit):
             key = r.doi or r.title
-            if key in seen: continue
+            if not key or key in seen:
+                continue
             seen.add(key)
-            results.append(ExpansionCandidate(
-                candidate_id=f"exp-{r.candidate_id}",
-                title=r.title,
-                source=candidate.candidate_id,
-                source_type="fallback"
-            ))
+            results.append(
+                ExpansionCandidate(
+                    candidate_id=f"exp-{r.candidate_id}",
+                    title=r.title,
+                    source=candidate.candidate_id,
+                    source_type="fallback",
+                )
+            )
 
     return results[:limit]
 ```
@@ -262,13 +282,14 @@ def expand_from_candidate(candidate: Candidate, limit:int=8):
 ===== FILE: app/graph.py =====
 
 Path: app/graph.py
-Size: 4091 bytes
+Size: 5674 bytes
 ```py
 from __future__ import annotations
 
 import math
 from html import escape
 from typing import Optional
+from urllib.parse import quote
 
 from app.models import Candidate, EdgeType, Graph, GraphEdge, GraphNode, NodeType, Project
 
@@ -288,50 +309,94 @@ def topic_node_id(topic: str) -> str:
 def update_graph_for_candidate(project: Project, candidate: Candidate) -> None:
     if candidate.decision != candidate.decision.YES:
         return
+
     node_ids = {node.node_id for node in project.graph.nodes}
     edge_ids = {edge.edge_id for edge in project.graph.edges}
-
     paper_id = paper_node_id(candidate.candidate_id)
+
     if paper_id not in node_ids:
-        project.graph.nodes.append(GraphNode(node_id=paper_id, node_type=NodeType.PAPER, label=candidate.title))
+        project.graph.nodes.append(
+            GraphNode(node_id=paper_id, node_type=NodeType.PAPER, label=candidate.title)
+        )
         node_ids.add(paper_id)
 
     for author in candidate.authors[:4]:
         aid = author_node_id(author)
         if aid not in node_ids:
-            project.graph.nodes.append(GraphNode(node_id=aid, node_type=NodeType.AUTHOR, label=author))
+            project.graph.nodes.append(
+                GraphNode(node_id=aid, node_type=NodeType.AUTHOR, label=author)
+            )
             node_ids.add(aid)
         eid = f"edge:{paper_id}:{aid}"
         if eid not in edge_ids:
-            project.graph.edges.append(GraphEdge(edge_id=eid, edge_type=EdgeType.PAPER_AUTHOR, source=paper_id, target=aid, label='author'))
+            project.graph.edges.append(
+                GraphEdge(
+                    edge_id=eid,
+                    edge_type=EdgeType.PAPER_AUTHOR,
+                    source=paper_id,
+                    target=aid,
+                    label="author",
+                )
+            )
             edge_ids.add(eid)
 
-    hints = [reason.replace('concept:', '') for reason in candidate.reasons if reason.startswith('concept:')]
+    hints = [reason.replace("concept:", "") for reason in candidate.reasons if reason.startswith("concept:")]
     for topic in hints[:4]:
         tid = topic_node_id(topic)
         if tid not in node_ids:
-            project.graph.nodes.append(GraphNode(node_id=tid, node_type=NodeType.TOPIC, label=topic.title()))
+            project.graph.nodes.append(
+                GraphNode(node_id=tid, node_type=NodeType.TOPIC, label=topic.title())
+            )
             node_ids.add(tid)
         eid = f"edge:{paper_id}:{tid}"
         if eid not in edge_ids:
-            project.graph.edges.append(GraphEdge(edge_id=eid, edge_type=EdgeType.PAPER_TOPIC, source=paper_id, target=tid, label='topic'))
+            project.graph.edges.append(
+                GraphEdge(
+                    edge_id=eid,
+                    edge_type=EdgeType.PAPER_TOPIC,
+                    source=paper_id,
+                    target=tid,
+                    label="topic",
+                )
+            )
             edge_ids.add(eid)
 
 
-def render_graph_svg(graph: Graph, selected_candidate_id: Optional[str] = None) -> str:
-    width, height = 760, 480
+def _candidate_id_from_node(node_id: str) -> Optional[str]:
+    prefix = "paper:"
+    if node_id.startswith(prefix):
+        return node_id[len(prefix):]
+    return None
+
+
+def _workspace_href(project_id: Optional[str], node_id: str) -> Optional[str]:
+    if not project_id:
+        return None
+    candidate_id = _candidate_id_from_node(node_id)
+    if not candidate_id:
+        return None
+    return f"/projects/{quote(project_id)}/workspace?selected={quote(candidate_id)}"
+
+
+def render_graph_svg(
+    graph: Graph,
+    selected_candidate_id: Optional[str] = None,
+    project_id: Optional[str] = None,
+) -> str:
+    width, height = 980, 680
     cx, cy = width / 2, height / 2
-    radius = 150
+    radius = 215
     nodes = graph.nodes
     positions: dict[str, tuple[float, float]] = {}
     total = max(len(nodes), 1)
+
     for index, node in enumerate(nodes):
         if node.node_type == NodeType.PAPER:
-            r = radius * 0.45
+            r = radius * 0.42
         elif node.node_type == NodeType.AUTHOR:
-            r = radius * 1.1
+            r = radius * 0.95
         else:
-            r = radius * 1.45
+            r = radius * 1.28
         angle = (2 * math.pi * index) / total
         positions[node.node_id] = (cx + math.cos(angle) * r, cy + math.sin(angle) * r)
 
@@ -340,20 +405,41 @@ def render_graph_svg(graph: Graph, selected_candidate_id: Optional[str] = None) 
         '<defs><filter id="glow"><feGaussianBlur stdDeviation="6" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>',
         '<rect width="100%" height="100%" rx="24" class="graph-bg"/>',
     ]
+
     for edge in graph.edges:
         if edge.source not in positions or edge.target not in positions:
             continue
         x1, y1 = positions[edge.source]
         x2, y2 = positions[edge.target]
-        pieces.append(f'<line x1="{x1:.1f}" y1="{y1:.1f}" x2="{x2:.1f}" y2="{y2:.1f}" class="graph-edge"/>')
+        href = _workspace_href(project_id, edge.source) or _workspace_href(project_id, edge.target)
+        line = (
+            f'<line x1="{x1:.1f}" y1="{y1:.1f}" x2="{x2:.1f}" y2="{y2:.1f}" '
+            f'class="graph-edge" data-source="{escape(edge.source)}" data-target="{escape(edge.target)}"/>'
+        )
+        if href:
+            pieces.append(f'<a href="{escape(href)}" class="graph-link">{line}</a>')
+        else:
+            pieces.append(line)
+
     for node in nodes:
         x, y = positions[node.node_id]
-        extra = ' graph-node--selected' if selected_candidate_id and node.node_id.endswith(selected_candidate_id) else ''
-        radius_px = 15 if node.node_type == NodeType.PAPER else 11
-        pieces.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{radius_px}" class="graph-node graph-node--{escape(node.node_type.value)}{extra}" filter="url(#glow)"/>')
-        pieces.append(f'<text x="{x:.1f}" y="{y + 28:.1f}" text-anchor="middle" class="graph-label">{escape(node.label[:44])}</text>')
+        extra = " graph-node--selected" if selected_candidate_id and node.node_id.endswith(selected_candidate_id) else ""
+        radius_px = 17 if node.node_type == NodeType.PAPER else 12
+        circle = (
+            f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{radius_px}" '
+            f'class="graph-node graph-node--{escape(node.node_type.value)}{extra}" '
+            f'filter="url(#glow)" data-node-id="{escape(node.node_id)}"/>'
+            f'<text x="{x:.1f}" y="{y + 30:.1f}" text-anchor="middle" class="graph-label">{escape(node.label[:44])}</text>'
+        )
+        href = _workspace_href(project_id, node.node_id)
+        if href:
+            pieces.append(f'<a href="{escape(href)}" class="graph-link">{circle}</a>')
+        else:
+            pieces.append(circle)
+
     if not nodes:
         pieces.append('<text x="50%" y="50%" text-anchor="middle" class="graph-empty">Accept papers to grow your map.</text>')
+
     pieces.append('</svg>')
     return ''.join(pieces)
 ```
@@ -361,7 +447,7 @@ def render_graph_svg(graph: Graph, selected_candidate_id: Optional[str] = None) 
 ===== FILE: app/main.py =====
 
 Path: app/main.py
-Size: 7935 bytes
+Size: 8814 bytes
 ```py
 from pathlib import Path
 
@@ -383,6 +469,8 @@ store = ProjectStore(settings.projects_dir, settings.library_dir, settings.expor
 app = FastAPI()
 templates = Jinja2Templates(directory="app/templates")
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
+
+FIXED_SEARCH_LIMIT = 8
 
 
 def _resolve_selected_candidate(project, selected_candidate_id: str = ""):
@@ -411,7 +499,13 @@ def _merge_expansion_candidates(project, incoming) -> None:
         seen.add(item.candidate_id)
 
 
-def _workspace_context(project=None, *, query: str = "", search_error: str = "", selected_candidate_id: str = ""):
+def _workspace_context(
+    project=None,
+    *,
+    query: str = "",
+    search_error: str = "",
+    selected_candidate_id: str = "",
+):
     projects = store.list_projects()
     selected_candidate = _resolve_selected_candidate(project, selected_candidate_id)
     graph_svg = ""
@@ -419,6 +513,7 @@ def _workspace_context(project=None, *, query: str = "", search_error: str = "",
         graph_svg = render_graph_svg(
             project.graph,
             selected_candidate.candidate_id if selected_candidate else None,
+            project.project_id,
         )
     accepted_count = 0
     deferred_count = 0
@@ -440,6 +535,7 @@ def _workspace_context(project=None, *, query: str = "", search_error: str = "",
         "accepted_count": accepted_count,
         "deferred_count": deferred_count,
         "rejected_count": rejected_count,
+        "fixed_search_limit": FIXED_SEARCH_LIMIT,
     }
 
 
@@ -449,11 +545,7 @@ def index(request: Request):
     project = projects[0] if projects else None
     context = _workspace_context(project)
     context["request"] = request
-    return templates.TemplateResponse(
-        request=request,
-        name="page.html",
-        context=context,
-    )
+    return templates.TemplateResponse(request=request, name="page.html", context=context)
 
 
 @app.post("/projects", response_class=HTMLResponse)
@@ -461,11 +553,17 @@ def create_project(request: Request, title: str = Form(...), description: str = 
     project = store.create_project(title, description)
     context = _workspace_context(project)
     context["request"] = request
-    return templates.TemplateResponse(
-        request=request,
-        name="partials/workspace_bundle.html",
-        context=context,
-    )
+    return templates.TemplateResponse(request=request, name="partials/workspace_bundle.html", context=context)
+
+
+@app.post("/projects/{pid}/delete", response_class=HTMLResponse)
+def delete_project(request: Request, pid: str):
+    store.delete_project(pid)
+    projects = store.list_projects()
+    project = projects[0] if projects else None
+    context = _workspace_context(project)
+    context["request"] = request
+    return templates.TemplateResponse(request=request, name="partials/workspace_bundle.html", context=context)
 
 
 @app.get("/projects/{pid}/workspace", response_class=HTMLResponse)
@@ -473,19 +571,26 @@ def project_workspace(request: Request, pid: str, selected: str = ""):
     project = store.get(pid)
     context = _workspace_context(project, selected_candidate_id=selected)
     context["request"] = request
-    return templates.TemplateResponse(
-        request=request,
-        name="partials/workspace_bundle.html",
-        context=context,
-    )
+    return templates.TemplateResponse(request=request, name="partials/workspace_bundle.html", context=context)
 
 
 @app.post("/projects/{pid}/search", response_class=HTMLResponse)
-def search_project(request: Request, pid: str, query: str = Form(...), limit: int = Form(12)):
+def search_project(
+    request: Request,
+    pid: str,
+    query: str = Form(...),
+    limit: int | None = Form(default=None),
+):
     project = store.get(pid)
     search_error = ""
+    effective_limit = FIXED_SEARCH_LIMIT
+    if limit is not None:
+        try:
+            effective_limit = FIXED_SEARCH_LIMIT if int(limit) <= 0 else min(int(limit), FIXED_SEARCH_LIMIT)
+        except Exception:
+            effective_limit = FIXED_SEARCH_LIMIT
     try:
-        results = run_search(query, limit=limit)
+        results = run_search(query, limit=effective_limit)
     except Exception as exc:
         results = []
         search_error = f"Search failed: {exc}"
@@ -499,11 +604,7 @@ def search_project(request: Request, pid: str, query: str = Form(...), limit: in
         selected_candidate_id=selected_candidate_id,
     )
     context["request"] = request
-    return templates.TemplateResponse(
-        request=request,
-        name="partials/workspace_bundle.html",
-        context=context,
-    )
+    return templates.TemplateResponse(request=request, name="partials/workspace_bundle.html", context=context)
 
 
 @app.post("/projects/{pid}/candidates/{cid}/decision", response_class=HTMLResponse)
@@ -516,22 +617,29 @@ def decide_candidate(
 ):
     project = store.get(pid)
     candidate = project.set_decision(cid, Decision(decision))
+    search_error = ""
     if candidate.decision == Decision.YES:
         update_graph_for_candidate(project, candidate)
-        _merge_expansion_candidates(project, expand_from_candidate(candidate, limit=8))
+        try:
+            expanded = expand_from_candidate(candidate, limit=FIXED_SEARCH_LIMIT)
+        except Exception as exc:
+            expanded = []
+            search_error = f"Expansion warning: {exc}"
+        _merge_expansion_candidates(project, expanded)
         project.expansion_candidates = [
             item
             for item in project.expansion_candidates
             if item.candidate_id not in {cid, f"exp-{cid}"}
         ]
     store.save(project)
-    context = _workspace_context(project, query=query, selected_candidate_id=cid)
-    context["request"] = request
-    return templates.TemplateResponse(
-        request=request,
-        name="partials/workspace_bundle.html",
-        context=context,
+    context = _workspace_context(
+        project,
+        query=query,
+        search_error=search_error,
+        selected_candidate_id=cid,
     )
+    context["request"] = request
+    return templates.TemplateResponse(request=request, name="partials/workspace_bundle.html", context=context)
 
 
 @app.post("/projects/{pid}/upload_pdf")
@@ -578,13 +686,7 @@ def export_project(pid: str):
             continue
         if candidate.local_pdf_path:
             shutil.copy(candidate.local_pdf_path, papers_dir)
-        metadata.append(
-            {
-                "title": candidate.title,
-                "doi": candidate.doi,
-                "pdf": candidate.local_pdf_path,
-            }
-        )
+        metadata.append({"title": candidate.title, "doi": candidate.doi, "pdf": candidate.local_pdf_path})
     with open(output_dir / "metadata.json", "w") as handle:
         json.dump(metadata, handle, indent=2)
     return "ok"
@@ -1069,7 +1171,7 @@ def run_search(query: str, limit: int = 12):
 ===== FILE: app/static/app.css =====
 
 Path: app/static/app.css
-Size: 5402 bytes
+Size: 7782 bytes
 ```css
 :root {
   color-scheme: dark;
@@ -1087,67 +1189,268 @@ Size: 5402 bytes
   --radius: 22px;
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
+
 * { box-sizing: border-box; }
+
 body {
   margin: 0;
   min-height: 100vh;
-  background: radial-gradient(circle at top left, rgba(124, 77, 255, 0.18), transparent 28%), radial-gradient(circle at top right, rgba(106, 169, 255, 0.12), transparent 24%), linear-gradient(180deg, #0b1020 0%, #070a14 100%);
+  background:
+    radial-gradient(circle at top left, rgba(124, 77, 255, 0.18), transparent 28%),
+    radial-gradient(circle at top right, rgba(106, 169, 255, 0.12), transparent 24%),
+    linear-gradient(180deg, #0b1020 0%, #070a14 100%);
   color: var(--text);
 }
-.shell { display: grid; grid-template-columns: 310px 1fr; gap: 20px; padding: 24px; }
+
+.shell {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(0, 3fr);
+  gap: 20px;
+  padding: 20px;
+  align-items: start;
+}
+
 .sidebar, .workspace { min-width: 0; }
-.brand { padding: 12px 8px 18px; }
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: sticky;
+  top: 20px;
+  max-height: calc(100vh - 40px);
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(320px, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.brand { padding: 10px 8px 8px; }
 .brand h1 { margin: 0 0 6px; font-size: 1.9rem; }
 .eyebrow { text-transform: uppercase; letter-spacing: 0.18em; color: #9ec5ff; font-size: 0.72rem; margin: 0 0 8px; }
 .muted { color: var(--muted); }
-.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px; backdrop-filter: blur(16px); }
-.sidebar, .workspace { display: flex; flex-direction: column; gap: 18px; }
-.workspace-grid { display: grid; grid-template-columns: minmax(320px, 0.95fr) minmax(340px, 1.15fr) minmax(320px, 0.95fr); gap: 18px; }
-.workspace-grid--bottom { grid-template-columns: 1.25fr 0.75fr; }
-.hero { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-.hero-actions, .decision-actions { display: flex; gap: 12px; flex-wrap: wrap; }
-.section-heading { display: flex; justify-content: space-between; gap: 12px; align-items: center; margin-bottom: 12px; }
-.section-heading h3, .card h2, .card h4 { margin: 0; }
-.search-form { display: grid; grid-template-columns: 1fr 90px auto; gap: 10px; margin-bottom: 14px; }
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 18px;
+  backdrop-filter: blur(16px);
+}
+
+.section-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.section-heading h2, .section-heading h3, .section-heading h4, .card h2, .card h4 { margin: 0; }
+
+.search-form {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  margin-bottom: 14px;
+  align-items: end;
+}
+
 label { display: grid; gap: 7px; font-size: 0.95rem; color: var(--muted); }
-input, textarea, button { font: inherit; }
-input, textarea { width: 100%; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.08); background: rgba(7, 12, 24, 0.72); color: var(--text); padding: 12px 14px; }
+
+input, textarea, button, summary { font: inherit; }
+
+input, textarea {
+  width: 100%;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(7, 12, 24, 0.72);
+  color: var(--text);
+  padding: 12px 14px;
+}
+
 textarea { resize: vertical; }
-.btn { border: 1px solid rgba(255, 255, 255, 0.08); background: rgba(255, 255, 255, 0.04); color: var(--text); border-radius: 16px; padding: 11px 15px; cursor: pointer; }
+
+.btn {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  border-radius: 16px;
+  padding: 11px 15px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
 .btn-primary { background: linear-gradient(135deg, var(--primary), var(--primary-2)); border-color: transparent; }
 .btn-success { background: rgba(46, 211, 160, 0.16); color: #adf7e0; }
 .btn-warning { background: rgba(248, 184, 78, 0.13); color: #ffe7b5; }
 .btn-danger { background: rgba(255, 111, 145, 0.14); color: #ffd5df; }
+.btn-quiet { padding: 8px 12px; border-radius: 14px; }
+
 .stack { display: flex; flex-direction: column; gap: 12px; }
 .stack.compact { gap: 10px; }
-.project-pill, .candidate-row { width: 100%; text-align: left; display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.03); border-radius: 18px; padding: 14px; color: var(--text); cursor: pointer; }
-.project-pill small, .candidate-row p, .candidate-row small { color: var(--muted); margin: 6px 0 0; }
-.project-pill--active, .candidate-row--active { border-color: rgba(106, 169, 255, 0.5); background: rgba(106, 169, 255, 0.12); }
-.decision-badge, .pill, .chip { display: inline-flex; align-items: center; justify-content: center; padding: 6px 10px; border-radius: 999px; font-size: 0.8rem; background: var(--chip); color: var(--muted); }
+
+.decision-actions, .chip-row, .project-row, .project-actions, .toolbar-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.project-row {
+  justify-content: space-between;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 18px;
+  padding: 10px;
+}
+
+.project-pill {
+  width: 100%;
+  text-align: left;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 18px;
+  padding: 14px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.project-pill small, .candidate-row p, .candidate-row small, .project-row small { color: var(--muted); margin: 6px 0 0; }
+.project-pill--active, .candidate-row--active, .result-card[open] { border-color: rgba(106, 169, 255, 0.5); background: rgba(106, 169, 255, 0.12); }
+
+.decision-badge, .pill, .chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  background: var(--chip);
+  color: var(--muted);
+  white-space: nowrap;
+}
+
 .decision-yes { color: #9cf3db; background: rgba(46, 211, 160, 0.12); }
 .decision-no { color: #ffc0d0; background: rgba(255, 111, 145, 0.12); }
 .decision-defer, .chip-warn { color: #ffe2ab; background: rgba(248, 184, 78, 0.14); }
-.graph-wrap { min-height: 480px; }
-.graph-svg { width: 100%; height: auto; }
+
+.map-panel { min-height: calc(100vh - 40px); }
+.map-panel .graph-wrap { min-height: 70vh; display: grid; align-content: start; gap: 18px; }
+.graph-svg { width: 100%; height: auto; min-height: 620px; }
 .graph-bg { fill: rgba(6, 11, 23, 0.72); stroke: rgba(106, 169, 255, 0.12); }
 .graph-edge { stroke: rgba(163, 184, 229, 0.28); stroke-width: 1.6; }
-.graph-node { stroke: rgba(255, 255, 255, 0.22); stroke-width: 1.8; }
+.graph-node { stroke: rgba(255, 255, 255, 0.22); stroke-width: 1.8; cursor: pointer; }
 .graph-node--paper { fill: #72b1ff; }
 .graph-node--author { fill: #2ed3a0; }
 .graph-node--topic { fill: #7c4dff; }
 .graph-node--selected { stroke: white; stroke-width: 2.5; }
-.graph-label { fill: #dce8ff; font-size: 11px; }
+.graph-label { fill: #dce8ff; font-size: 11px; pointer-events: none; }
 .graph-empty { fill: var(--muted); font-size: 20px; }
-.chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
-.acquisition-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 16px 0; }
-.mini-stat, .retrieval-row, .timeline-row { background: rgba(255, 255, 255, 0.03); padding: 12px 14px; border-radius: 16px; border: 1px solid var(--line); }
+.graph-link { cursor: pointer; }
+
+.acquisition-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.mini-stat, .retrieval-row, .timeline-row, .result-card {
+  background: rgba(255, 255, 255, 0.03);
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+}
+
 .mini-stat span { display: block; color: var(--muted); font-size: 0.8rem; }
 .mini-stat strong { display: block; margin-top: 4px; }
 .export-banner { margin-top: 14px; padding: 12px 14px; border-radius: 16px; background: rgba(106, 169, 255, 0.12); color: #dce8ff; }
-.empty-state { min-height: 420px; display: grid; align-content: center; justify-items: start; }
+.empty-state { min-height: 260px; display: grid; align-content: center; justify-items: start; }
 code { font-family: "SFMono-Regular", ui-monospace, monospace; }
-@media (max-width: 1280px) { .workspace-grid, .workspace-grid--bottom { grid-template-columns: 1fr; } }
-@media (max-width: 900px) { .shell { grid-template-columns: 1fr; } }
+
+.rail-section {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 0;
+  overflow: hidden;
+}
+
+.rail-section > summary {
+  list-style: none;
+  padding: 16px 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--text);
+  font-weight: 600;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.rail-section > summary::-webkit-details-marker { display: none; }
+.rail-section[open] > summary { background: rgba(255,255,255,0.04); }
+.rail-section-body { padding: 14px 18px 18px; }
+
+.results-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 48vh;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.result-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.result-card summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px;
+}
+
+.result-card summary::-webkit-details-marker { display: none; }
+.result-card-body {
+  border-top: 1px solid rgba(255,255,255,0.06);
+  padding: 14px;
+  display: grid;
+  gap: 12px;
+}
+
+.candidate-meta { color: var(--muted); margin: 6px 0 0; }
+.workspace-right { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+
+.toolbar-row { justify-content: space-between; }
+
+@media (max-width: 1500px) {
+  .acquisition-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 1180px) {
+  .shell { grid-template-columns: 1fr; }
+  .sidebar { position: static; max-height: none; overflow: visible; }
+  .workspace { grid-template-columns: 1fr; }
+  .map-panel { min-height: auto; }
+  .map-panel .graph-wrap { min-height: auto; }
+  .graph-svg { min-height: 460px; }
+}
 ```
 
 ===== FILE: app/static/app.js =====
@@ -1165,7 +1468,7 @@ document.body.addEventListener('htmx:afterSwap', (event) => {
 ===== FILE: app/store.py =====
 
 Path: app/store.py
-Size: 1702 bytes
+Size: 1872 bytes
 ```py
 from app.models import Project
 
@@ -1186,6 +1489,11 @@ class ProjectStore:
         project = Project.create(title, description)
         self.save(project)
         return project
+
+    def delete_project(self, pid):
+        path = self.path(pid)
+        if path.exists():
+            path.unlink()
 
     def list_projects(self):
         projects = []
@@ -1214,6 +1522,7 @@ class ProjectStore:
                     "pdf_status": candidate.pdf_status,
                     "si_status": candidate.si_status,
                     "doi": candidate.doi,
+                    "decision": candidate.decision,
                 }
             )
         return items
@@ -1222,7 +1531,7 @@ class ProjectStore:
 ===== FILE: app/templates/page.html =====
 
 Path: app/templates/page.html
-Size: 1375 bytes
+Size: 1474 bytes
 ```html
 <!doctype html>
 <html lang="en">
@@ -1243,14 +1552,16 @@ Size: 1375 bytes
           <p class="muted">Search, review, map, retrieve, export.</p>
         </div>
         {% include 'partials/project_list.html' %}
-        <section class="card create-project">
-          <h2>New project</h2>
-          <form hx-post="/projects" hx-target="#workspace" hx-swap="innerHTML">
-            <label>Title<input type="text" name="title" placeholder="Core transport map" required></label>
-            <label>Description<textarea name="description" rows="3" placeholder="Optional scope notes"></textarea></label>
-            <button class="btn btn-primary" type="submit">Create project</button>
-          </form>
-        </section>
+        <details class="rail-section" open>
+          <summary>New project</summary>
+          <div class="rail-section-body">
+            <form hx-post="/projects" hx-target="#workspace" hx-swap="innerHTML" class="stack compact">
+              <label>Title<input type="text" name="title" placeholder="Core transport map" required></label>
+              <label>Description<textarea name="description" rows="3" placeholder="Optional scope notes"></textarea></label>
+              <button class="btn btn-primary" type="submit">Create project</button>
+            </form>
+          </div>
+        </details>
       </aside>
       <main id="workspace" class="workspace">
         {% include 'partials/workspace.html' %}
@@ -1263,33 +1574,48 @@ Size: 1375 bytes
 ===== FILE: app/templates/partials/project_list.html =====
 
 Path: app/templates/partials/project_list.html
-Size: 648 bytes
+Size: 1133 bytes
 ```html
-<section class="card project-list" id="project-list">
-  <h2>Projects</h2>
-  {% if projects %}
-    <div class="stack compact">
-      {% for item in projects %}
-        <button class="project-pill {% if project and item.project_id == project.project_id %}project-pill--active{% endif %}" hx-get="/projects/{{ item.project_id }}/workspace" hx-target="#workspace" hx-swap="innerHTML">
-          <span>{{ item.title }}</span>
-          <small>{{ item.updated_at.strftime('%d %b %Y %H:%M') }}</small>
-        </button>
-      {% endfor %}
-    </div>
-  {% else %}
-    <p class="muted">Create a project to start your first map.</p>
-  {% endif %}
-</section>
+<details class="rail-section" id="project-list" open>
+  <summary>Projects</summary>
+  <div class="rail-section-body">
+    {% if projects %}
+      <div class="stack compact">
+        {% for item in projects %}
+          <div class="project-row">
+            <button
+              class="project-pill {% if project and item.project_id == project.project_id %}project-pill--active{% endif %}"
+              hx-get="/projects/{{ item.project_id }}/workspace"
+              hx-target="#workspace"
+              hx-swap="innerHTML"
+              type="button"
+            >
+              <span>
+                {{ item.title }}
+                <small>{{ item.updated_at.strftime('%d %b %Y %H:%M') }}</small>
+              </span>
+            </button>
+            <form hx-post="/projects/{{ item.project_id }}/delete" hx-target="#workspace" hx-swap="innerHTML">
+              <button class="btn btn-danger btn-quiet" type="submit">Delete</button>
+            </form>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="muted">Create a project to start your first map.</p>
+    {% endif %}
+  </div>
+</details>
 ```
 
 ===== FILE: app/templates/partials/workspace.html =====
 
 Path: app/templates/partials/workspace.html
-Size: 8651 bytes
+Size: 8205 bytes
 ```html
 {% if project %}
-<div class="workspace-grid">
-  <section class="card">
+<section class="card map-panel">
+  <div class="graph-wrap">
     <div class="section-heading">
       <div>
         <h2>{{ project.title }}</h2>
@@ -1297,206 +1623,165 @@ Size: 8651 bytes
         <p class="muted">{{ project.description }}</p>
         {% endif %}
       </div>
-      <span class="pill">{{ project.candidates|length }} candidates</span>
+      <div class="chip-row">
+        <span class="pill">{{ accepted_count }} accepted</span>
+        <span class="pill">{{ project.expansion_candidates|length }} queued</span>
+      </div>
     </div>
+    <div>{{ graph_svg|safe }}</div>
+    <div class="acquisition-grid">
+      <div class="mini-stat"><span>Accepted</span><strong>{{ accepted_count }}</strong></div>
+      <div class="mini-stat"><span>Deferred</span><strong>{{ deferred_count }}</strong></div>
+      <div class="mini-stat"><span>Rejected</span><strong>{{ rejected_count }}</strong></div>
+      <div class="mini-stat"><span>Search scope</span><strong>{{ fixed_search_limit }} results</strong></div>
+    </div>
+    <div class="timeline-row">
+      <strong>Map interaction</strong>
+      <p class="muted">Paper nodes and links are now clickable entry points into the review panel. This keeps the graph ready for richer interactive editing without hiding today’s local-first workflow.</p>
+    </div>
+  </div>
+</section>
 
+<aside class="workspace-right">
+  <section class="card">
+    <div class="toolbar-row">
+      <div>
+        <h3>Search</h3>
+        <p class="muted">Fixed to the top {{ fixed_search_limit }} ranked results for a tighter review loop.</p>
+      </div>
+      <span class="pill">{{ project.candidates|length }} cached</span>
+    </div>
     <form class="search-form" hx-post="/projects/{{ project.project_id }}/search" hx-target="#workspace" hx-swap="innerHTML">
       <label>
-        Search literature
-        <input type="text" name="query" value="{{ search_query or '' }}" placeholder="e.g. iron oxide transport" required>
-      </label>
-      <label>
-        Limit
-        <input type="number" name="limit" value="12" min="1" max="50">
+        Literature query
+        <input type="text" name="query" value="{{ search_query or '' }}" placeholder="e.g. immiscibility core mercury" required>
       </label>
       <button class="btn btn-primary" type="submit">Search</button>
     </form>
-
     {% if search_error %}
     <div class="export-banner">{{ search_error }}</div>
     {% endif %}
-
     {% if project.candidates %}
-    <div class="stack">
+    <div class="results-scroll">
       {% for candidate in project.candidates %}
-      <button
-        class="candidate-row {% if selected_candidate and candidate.candidate_id == selected_candidate.candidate_id %}candidate-row--active{% endif %}"
-        hx-get="/projects/{{ project.project_id }}/workspace?selected={{ candidate.candidate_id }}"
-        hx-target="#workspace"
-        hx-swap="innerHTML"
-        type="button"
-      >
-        <div>
-          <strong>{{ candidate.title }}</strong>
-          <p>
-            {% if candidate.authors %}{{ candidate.authors[:4]|join(', ') }}{% else %}Unknown authors{% endif %}
-            {% if candidate.year %} · {{ candidate.year }}{% endif %}
-            {% if candidate.journal %} · {{ candidate.journal }}{% endif %}
-          </p>
-          {% if candidate.doi %}<small>DOI: {{ candidate.doi }}</small>{% endif %}
+      <details class="result-card" {% if selected_candidate and candidate.candidate_id == selected_candidate.candidate_id %}open{% endif %}>
+        <summary>
+          <div>
+            <strong>{{ candidate.title }}</strong>
+            <p class="candidate-meta">
+              {% if candidate.authors %}{{ candidate.authors[:4]|join(', ') }}{% else %}Unknown authors{% endif %}
+              {% if candidate.year %} · {{ candidate.year }}{% endif %}
+              {% if candidate.journal %} · {{ candidate.journal }}{% endif %}
+            </p>
+            {% if candidate.doi %}<small>DOI: {{ candidate.doi }}</small>{% endif %}
+          </div>
+          <span class="decision-badge {% if candidate.decision.value == 'yes' %}decision-yes{% elif candidate.decision.value == 'no' %}decision-no{% elif candidate.decision.value == 'defer' %}decision-defer{% endif %}">
+            {{ candidate.decision.value }}
+          </span>
+        </summary>
+        <div class="result-card-body">
+          <div class="chip-row">
+            <span class="chip">PDF: {{ candidate.pdf_status }}</span>
+            <span class="chip">SI: {{ candidate.si_status }}</span>
+            {% if candidate.year %}<span class="chip">Year: {{ candidate.year }}</span>{% endif %}
+          </div>
+
+          {% if candidate.abstract %}
+          <div class="timeline-row">
+            <strong>Abstract</strong>
+            <p>{{ candidate.abstract }}</p>
+          </div>
+          {% else %}
+          <div class="timeline-row">
+            <strong>Review notes</strong>
+            <p class="muted">Expand a candidate, inspect the metadata, then record a deliberate accept / reject / defer decision to control map growth.</p>
+          </div>
+          {% endif %}
+
+          <form class="decision-actions" hx-post="/projects/{{ project.project_id }}/candidates/{{ candidate.candidate_id }}/decision" hx-target="#workspace" hx-swap="innerHTML">
+            <input type="hidden" name="query" value="{{ search_query or '' }}">
+            <button class="btn btn-success" type="submit" name="decision" value="yes">Accept</button>
+            <button class="btn btn-warning" type="submit" name="decision" value="defer">Defer</button>
+            <button class="btn btn-danger" type="submit" name="decision" value="no">Reject</button>
+          </form>
+
+          <div class="chip-row">
+            <button
+              class="btn btn-quiet"
+              hx-get="/projects/{{ project.project_id }}/workspace?selected={{ candidate.candidate_id }}"
+              hx-target="#workspace"
+              hx-swap="innerHTML"
+              type="button"
+            >
+              Focus in map
+            </button>
+            {% if candidate.doi %}
+            <a class="btn btn-quiet" href="https://doi.org/{{ candidate.doi }}" target="_blank" rel="noopener noreferrer">Open DOI</a>
+            <a class="btn btn-quiet" href="https://api.openalex.org/works?filter=doi:https://doi.org/{{ candidate.doi }}" target="_blank" rel="noopener noreferrer">OpenAlex</a>
+            {% else %}
+            <a class="btn btn-quiet" href="https://api.openalex.org/works?search={{ candidate.title|urlencode }}" target="_blank" rel="noopener noreferrer">Search OpenAlex</a>
+            <a class="btn btn-quiet" href="https://api.crossref.org/works?query={{ candidate.title|urlencode }}" target="_blank" rel="noopener noreferrer">Search Crossref</a>
+            {% endif %}
+          </div>
         </div>
-        <span class="decision-badge {% if candidate.decision.value == 'yes' %}decision-yes{% elif candidate.decision.value == 'no' %}decision-no{% elif candidate.decision.value == 'defer' %}decision-defer{% endif %}">
-          {{ candidate.decision.value }}
-        </span>
-      </button>
+      </details>
       {% endfor %}
     </div>
     {% else %}
     <div class="empty-state">
       <h3>No search results yet</h3>
-      <p class="muted">Run a search to populate candidates for this project, then select a paper to review or accept.</p>
+      <p class="muted">Run a search to populate candidates, then expand a result on the right to review it and take action.</p>
     </div>
     {% endif %}
   </section>
 
-  <section class="card graph-wrap">
-    <div class="section-heading">
-      <h3>Map / graph</h3>
-      <span class="pill">{{ accepted_count }} accepted</span>
-    </div>
-    <div>{{ graph_svg|safe }}</div>
-    <div class="acquisition-grid">
-      <div class="mini-stat">
-        <span>Accepted</span>
-        <strong>{{ accepted_count }}</strong>
-      </div>
-      <div class="mini-stat">
-        <span>Deferred</span>
-        <strong>{{ deferred_count }}</strong>
-      </div>
-      <div class="mini-stat">
-        <span>Rejected</span>
-        <strong>{{ rejected_count }}</strong>
-      </div>
-      <div class="mini-stat">
-        <span>Expansion queue</span>
-        <strong>{{ project.expansion_candidates|length }}</strong>
-      </div>
-    </div>
-  </section>
-
-  <section class="card">
-    <div class="section-heading">
-      <h3>Review / web</h3>
-      {% if selected_candidate %}
-      <span class="pill">Selected</span>
-      {% endif %}
-    </div>
-
-    {% if selected_candidate %}
-    <div class="stack">
-      <div>
-        <h4>{{ selected_candidate.title }}</h4>
-        <p class="muted">
-          {% if selected_candidate.authors %}{{ selected_candidate.authors|join(', ') }}{% else %}Unknown authors{% endif %}
-          {% if selected_candidate.year %} · {{ selected_candidate.year }}{% endif %}
-        </p>
-        {% if selected_candidate.journal %}<p class="muted">{{ selected_candidate.journal }}</p>{% endif %}
-        {% if selected_candidate.doi %}<p><code>{{ selected_candidate.doi }}</code></p>{% endif %}
-      </div>
-
-      <form class="decision-actions" hx-post="/projects/{{ project.project_id }}/candidates/{{ selected_candidate.candidate_id }}/decision" hx-target="#workspace" hx-swap="innerHTML">
-        <input type="hidden" name="query" value="{{ search_query or '' }}">
-        <button class="btn btn-success" type="submit" name="decision" value="yes">Accept</button>
-        <button class="btn btn-warning" type="submit" name="decision" value="defer">Defer</button>
-        <button class="btn btn-danger" type="submit" name="decision" value="no">Reject</button>
-      </form>
-
-      <div class="chip-row">
-        <span class="chip">PDF: {{ selected_candidate.pdf_status }}</span>
-        <span class="chip">SI: {{ selected_candidate.si_status }}</span>
-        <span class="chip">Decision: {{ selected_candidate.decision.value }}</span>
-      </div>
-
-      {% if selected_candidate.abstract %}
-      <div class="timeline-row">
-        <strong>Abstract</strong>
-        <p>{{ selected_candidate.abstract }}</p>
-      </div>
-      {% else %}
-      <div class="timeline-row">
-        <strong>Notes</strong>
-        <p class="muted">Use the decision buttons to control graph growth deliberately. Accepted papers will appear in the map and seed the expansion queue.</p>
-      </div>
-      {% endif %}
-
-      <div class="timeline-row">
-        <strong>Web links</strong>
-        <div class="chip-row">
-          {% if selected_candidate.doi %}
-          <a class="btn" href="https://doi.org/{{ selected_candidate.doi }}" target="_blank" rel="noopener noreferrer">Open DOI</a>
-          <a class="btn" href="https://api.openalex.org/works?filter=doi:https://doi.org/{{ selected_candidate.doi }}" target="_blank" rel="noopener noreferrer">OpenAlex</a>
-          {% else %}
-          <a class="btn" href="https://api.openalex.org/works?search={{ selected_candidate.title|urlencode }}" target="_blank" rel="noopener noreferrer">Search OpenAlex</a>
-          <a class="btn" href="https://api.crossref.org/works?query={{ selected_candidate.title|urlencode }}" target="_blank" rel="noopener noreferrer">Search Crossref</a>
-          {% endif %}
-        </div>
-      </div>
-    </div>
-    {% else %}
-    <div class="empty-state">
-      <h3>No paper selected</h3>
-      <p class="muted">Select a search result to review it, open its web links, and record a decision.</p>
-    </div>
-    {% endif %}
-  </section>
-</div>
-
-<div class="workspace-grid workspace-grid--bottom">
-  <section class="card">
-    <div class="section-heading">
-      <h3>Retrieval / accepted papers</h3>
-      <span class="pill">{{ retrieval_items|length }} tracked</span>
-    </div>
-    {% if retrieval_items %}
-      <div class="stack compact">
-      {% for item in retrieval_items %}
+  <details class="card" open>
+    <summary><strong>Retrieval tracking</strong></summary>
+    <div class="stack compact" style="margin-top: 14px;">
+      {% if retrieval_items %}
+        {% for item in retrieval_items %}
         <div class="retrieval-row">
           <strong>{{ item.title }}</strong>
-          <p>PDF: {{ item.pdf_status }} | SI: {{ item.si_status }}</p>
+          <p>Decision: {{ item.decision.value }} · PDF: {{ item.pdf_status }} · SI: {{ item.si_status }}</p>
           <form hx-post="/projects/{{ project.project_id }}/upload_pdf" enctype="multipart/form-data">
             <input type="hidden" name="cid" value="{{ item.candidate_id }}">
-            <input type="file" name="file"><button>Upload PDF</button>
+            <input type="file" name="file"><button class="btn btn-quiet" type="submit">Upload PDF</button>
           </form>
           <form hx-post="/projects/{{ project.project_id }}/upload_si" enctype="multipart/form-data">
             <input type="hidden" name="cid" value="{{ item.candidate_id }}">
-            <input type="file" name="file"><button>Upload SI</button>
+            <input type="file" name="file"><button class="btn btn-quiet" type="submit">Upload SI</button>
           </form>
         </div>
-      {% endfor %}
-      </div>
-    {% else %}
-      <p class="muted">Accepted papers and retrieval tracking will populate here as you build the map.</p>
-    {% endif %}
-  </section>
-
-  <section class="card">
-    <div class="section-heading">
-      <h3>Expansion queue</h3>
-      <span class="pill">{{ project.expansion_candidates|length }}</span>
+        {% endfor %}
+      {% else %}
+        <p class="muted">Retrieval tracking fills in as papers are reviewed and gathered locally.</p>
+      {% endif %}
     </div>
-    {% if project.expansion_candidates %}
-      <div class="stack compact">
-      {% for item in project.expansion_candidates %}
+  </details>
+
+  <details class="card" open>
+    <summary><strong>Expansion queue</strong></summary>
+    <div class="stack compact" style="margin-top: 14px;">
+      {% if project.expansion_candidates %}
+        {% for item in project.expansion_candidates %}
         <div class="timeline-row">
           <strong>{{ item.title }}</strong>
           <p class="muted">Generated from {{ item.source_type }} for {{ item.source }}</p>
         </div>
-      {% endfor %}
-      </div>
-    {% else %}
-      <p class="muted">No queued expansion candidates yet. Accepting a paper can seed citation and author-related expansion here.</p>
-    {% endif %}
-
-    <form hx-post="/projects/{{ project.project_id }}/export">
-      <button class="btn" type="submit">Export Project</button>
-    </form>
-  </section>
-</div>
+        {% endfor %}
+      {% else %}
+        <p class="muted">No queued expansion candidates yet. Accepting a paper can seed citation and author-related expansion here.</p>
+      {% endif %}
+      <form hx-post="/projects/{{ project.project_id }}/export">
+        <button class="btn" type="submit">Export Project</button>
+      </form>
+    </div>
+  </details>
+</aside>
 {% else %}
-<section class="card empty-state">
+<section class="card empty-state" style="grid-column: 1 / -1;">
   <h2>No project selected</h2>
-  <p class="muted">Create a project from the sidebar to start a local-first literature map.</p>
+  <p class="muted">Create a project from the left rail to start a local-first literature map.</p>
 </section>
 {% endif %}
 ```
