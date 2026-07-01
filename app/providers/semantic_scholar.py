@@ -1,12 +1,13 @@
 
 import httpx
 from hashlib import sha1
+from typing import List
 from app.models import Candidate
 
 API_URL = "https://api.semanticscholar.org/graph/v1/paper/search"
 
 class SemanticScholarProvider:
-    def search(self, query: str, limit: int):
+    def search(self, query: str, limit: int) -> List[Candidate]:
         params = {
             "query": query,
             "limit": limit,
@@ -25,10 +26,8 @@ class SemanticScholarProvider:
             journal = item.get("venue", "")
             abstract = item.get("abstract", "") or ""
 
-            doi = None
             ext = item.get("externalIds") or {}
-            if isinstance(ext, dict):
-                doi = ext.get("DOI")
+            doi = ext.get("DOI") if isinstance(ext, dict) else None
 
             identity = doi or title
             cid = sha1(identity.encode("utf-8")).hexdigest()[:12]
@@ -45,7 +44,7 @@ class SemanticScholarProvider:
                 keywords=[]
             ))
 
-        if not results:
-            raise RuntimeError("SemanticScholar returned no results")
+        if len(results) < 3:
+            raise RuntimeError("SemanticScholar weak results")
 
         return results
