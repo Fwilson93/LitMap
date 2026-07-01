@@ -1,5 +1,5 @@
 LIVE PROJECT CONTEXT
-Generated: 2026-07-01T09:05:33.916117+00:00
+Generated: 2026-07-01T09:17:50.298596+00:00
 Repository root: /Users/fwilson/Documents/Data/litmap_slim
 ===== PROJECT INTENT =====
 
@@ -118,22 +118,12 @@ That means the context pack is tuned for LLM handoff rather than raw archival co
 
 ===== GIT SNAPSHOT =====
 
-Branch: litmap-slim-main
-Commit: (not available)
+Branch: main
+Commit: 09a717f93b774e6f0bdf6e51163178768e7f9430
 
 Status:
-?? .venv/
-?? README.md
-?? app/
-?? data/
-?? first_statup.txt
-?? litmap_launcher_patch.zip
-?? litmap_slim.egg-info/
-?? notes/
-?? pyproject.toml
-?? run_litmap.sh
-?? scripts/
-?? tests/
+D litmap_launcher_patch.zip
+?? update.sh
 
 ===== AUTOMATED CHECKS =====
 
@@ -161,7 +151,6 @@ Return code: 0
       - workspace.html
       - workspace_bundle.html
 - first_statup.txt
-- litmap_launcher_patch.zip
 - litmap_slim.egg-info/
   - PKG-INFO
   - SOURCES.txt
@@ -186,6 +175,7 @@ Return code: 0
   - test_app.py
   - test_store.py
   - test_tools.py
+- update.sh
 
 ===== TEXT FILE MANIFEST =====
 
@@ -222,6 +212,7 @@ Return code: 0
 - tests/test_app.py (2136 bytes)
 - tests/test_store.py (760 bytes)
 - tests/test_tools.py (1812 bytes)
+- update.sh (1609 bytes)
 
 ===== HANDOFF NOTES =====
 
