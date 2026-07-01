@@ -1,1 +1,336 @@
-{"project_id":"test13","title":"test13","description":"","search_query":"pozzo 2012 conductivity","created_at":"2026-07-01T14:00:10.551571Z","updated_at":"2026-07-01T14:00:10.551577Z","candidates":[{"candidate_id":"71c3442c4929","title":"Electrical and thermal conductivity of liquid sodium from first-principles calculations","authors":["Monica Pozzo","Michael P. Desjarlais","Dario Alfè"],"journal":"Physical Review B","year":2011,"doi":"10.1103/physrevb.84.054203","abstract":"","reasons":[],"keywords":[],"decision":"unreviewed","notes":"","local_pdf_present":false,"local_pdf_path":null,"local_supplement_present":false,"local_supplement_path":null},{"candidate_id":"cd84e09badee","title":"Thermal and electrical conductivity of iron at Earth’s core conditions","authors":["Monica Pozzo","Chris Davies","David Gubbins","Dario Alfè"],"journal":"Nature","year":2012,"doi":"10.1038/nature11031","abstract":"","reasons":[],"keywords":[],"decision":"yes","notes":"","local_pdf_present":false,"local_pdf_path":null,"local_supplement_present":false,"local_supplement_path":null},{"candidate_id":"3fad71411ce8","title":"Pozzo, Dario","authors":[],"journal":"Benezit Dictionary of Artists","year":2011,"doi":"10.1093/benz/9780199773787.article.b00145452","abstract":"","reasons":[],"keywords":[],"decision":"unreviewed","notes":"","local_pdf_present":false,"local_pdf_path":null,"local_supplement_present":false,"local_supplement_path":null},{"candidate_id":"d3cbfe255ed8","title":"Pozzo, Leopoldo","authors":[],"journal":"Benezit Dictionary of Artists","year":2011,"doi":"10.1093/benz/9780199773787.article.b00145459","abstract":"","reasons":[],"keywords":[],"decision":"unreviewed","notes":"","local_pdf_present":false,"local_pdf_path":null,"local_supplement_present":false,"local_supplement_path":null},{"candidate_id":"9b51665393a8","title":"Pozzo, Andrea","authors":[],"journal":"Benezit Dictionary of Artists","year":2011,"doi":"10.1093/benz/9780199773787.article.b00205608","abstract":"","reasons":[],"keywords":[],"decision":"unreviewed","notes":"","local_pdf_present":false,"local_pdf_path":null,"local_supplement_present":false,"local_supplement_path":null},{"candidate_id":"d74b34a6cd66","title":"Pozzo, Francesco","authors":[],"journal":"Benezit Dictionary of Artists","year":2011,"doi":"10.1093/benz/9780199773787.article.b00145453","abstract":"","reasons":[],"keywords":[],"decision":"unreviewed","notes":"","local_pdf_present":false,"local_pdf_path":null,"local_supplement_present":false,"local_supplement_path":null},{"candidate_id":"3261c4b6437f","title":"Pozzo, Battista dal","authors":[],"journal":"Benezit Dictionary of Artists","year":2011,"doi":"10.1093/benz/9780199773787.article.b00145448","abstract":"","reasons":[],"keywords":[],"decision":"unreviewed","notes":"","local_pdf_present":false,"local_pdf_path":null,"local_supplement_present":false,"local_supplement_path":null},{"candidate_id":"8a21fd3477d4","title":"Pozzo, Giovanni Pietro","authors":[],"journal":"Benezit Dictionary of Artists","year":2011,"doi":"10.1093/benz/9780199773787.article.b00145454","abstract":"","reasons":[],"keywords":[],"decision":"unreviewed","notes":"","local_pdf_present":false,"local_pdf_path":null,"local_supplement_present":false,"local_supplement_path":null}],"graph":{"nodes":[{"node_id":"paper:cd84e09badee","node_type":"paper","label":"Thermal and electrical conductivity of iron at Earth’s core conditions"},{"node_id":"author:monica pozzo","node_type":"author","label":"Monica Pozzo"},{"node_id":"author:chris davies","node_type":"author","label":"Chris Davies"},{"node_id":"author:david gubbins","node_type":"author","label":"David Gubbins"},{"node_id":"author:dario alfè","node_type":"author","label":"Dario Alfè"}],"edges":[{"edge_id":"edge:paper:cd84e09badee:author:monica pozzo","edge_type":"paper_author","source":"paper:cd84e09badee","target":"author:monica pozzo","label":"author"},{"edge_id":"edge:paper:cd84e09badee:author:chris davies","edge_type":"paper_author","source":"paper:cd84e09badee","target":"author:chris davies","label":"author"},{"edge_id":"edge:paper:cd84e09badee:author:david gubbins","edge_type":"paper_author","source":"paper:cd84e09badee","target":"author:david gubbins","label":"author"},{"edge_id":"edge:paper:cd84e09badee:author:dario alfè","edge_type":"paper_author","source":"paper:cd84e09badee","target":"author:dario alfè","label":"author"}]},"timeline":[{"event_id":"evt_4bd0fab582","event_type":"candidate_decision","timestamp":"2026-07-01T14:00:41.835680Z","message":"Marked 'Thermal and electrical conductivity of iron at Earth’s core conditions' as yes.","payload":{"candidate_id":"cd84e09badee","decision":"yes"}},{"event_id":"evt_d70f749451","event_type":"project_created","timestamp":"2026-07-01T14:00:10.551637Z","message":"Created project 'test13'.","payload":{}}],"expansion_candidates":[],"blacklist":[]}
+{
+  "project_id": "test13",
+  "title": "test13",
+  "description": "",
+  "created_at": "2026-07-01T19:29:26.844463Z",
+  "updated_at": "2026-07-01T19:30:10.289075Z",
+  "candidates": [
+    {
+      "candidate_id": "34613d29beb1",
+      "title": "Core formation in planetesimals: the importance and geochemical legacy of immiscibility in metallic liquids.",
+      "authors": [
+        "Geoffrey Bromiley",
+        "Freya Dibble",
+        "Lee Saper"
+      ],
+      "journal": "Goldschmidt2023 abstracts",
+      "year": 2023,
+      "doi": "10.7185/gold2023.19851",
+      "abstract": "",
+      "reasons": [],
+      "keywords": [],
+      "decision": "unreviewed",
+      "pdf_status": "missing",
+      "local_pdf_path": null,
+      "si_status": "missing",
+      "local_si_path": null
+    },
+    {
+      "candidate_id": "fc42a654c119",
+      "title": "The extent of immiscibility in planetesimal cores: core formation and volatile loss in the early solar system",
+      "authors": [
+        "Geoffrey Bromiley",
+        "Matthew Varnam",
+        "Hidenori Terasaki",
+        "Tetsuya Komabayashi",
+        "Jens Barosch"
+      ],
+      "journal": "Goldschmidt2025 abstracts",
+      "year": 2025,
+      "doi": "10.7185/gold2025.27523",
+      "abstract": "",
+      "reasons": [],
+      "keywords": [],
+      "decision": "unreviewed",
+      "pdf_status": "missing",
+      "local_pdf_path": null,
+      "si_status": "missing",
+      "local_si_path": null
+    },
+    {
+      "candidate_id": "fd8dda8b6d5b",
+      "title": "Core-mantle interactions for Mercury",
+      "authors": [
+        "B. Noyelles",
+        "J. Dufey",
+        "A. Lemaitre"
+      ],
+      "journal": "Monthly Notices of the Royal Astronomical Society",
+      "year": 2010,
+      "doi": "10.1111/j.1365-2966.2010.16918.x",
+      "abstract": "",
+      "reasons": [],
+      "keywords": [],
+      "decision": "yes",
+      "pdf_status": "missing",
+      "local_pdf_path": null,
+      "si_status": "missing",
+      "local_si_path": null
+    },
+    {
+      "candidate_id": "48a3491376c2",
+      "title": "THE ROTATIONAL DYNAMICS OF MERCURY AND THE STATE OF ITS CORE",
+      "authors": [
+        "S. J. PEALE"
+      ],
+      "journal": "Mercury",
+      "year": 1989,
+      "doi": "10.2307/j.ctv1v090nx.18",
+      "abstract": "",
+      "reasons": [],
+      "keywords": [],
+      "decision": "unreviewed",
+      "pdf_status": "missing",
+      "local_pdf_path": null,
+      "si_status": "missing",
+      "local_si_path": null
+    },
+    {
+      "candidate_id": "4e33350a5879",
+      "title": "Seismological Constraints on Core Composition from Fe-O-S Liquid Immiscibility",
+      "authors": [
+        "George Helffrich",
+        "Satoshi Kaneshima"
+      ],
+      "journal": "Science",
+      "year": 2004,
+      "doi": "10.1126/science.1101109",
+      "abstract": "",
+      "reasons": [],
+      "keywords": [],
+      "decision": "unreviewed",
+      "pdf_status": "missing",
+      "local_pdf_path": null,
+      "si_status": "missing",
+      "local_si_path": null
+    },
+    {
+      "candidate_id": "361101e12f0d",
+      "title": "Supplemental Material: Climatic regulation of atmospheric mercury deposition: Evidence from mercury isotopes in an alpine peat core",
+      "authors": [
+        "Wen Xue",
+        "et al."
+      ],
+      "journal": "",
+      "year": null,
+      "doi": "10.1130/geol.s.23647029",
+      "abstract": "",
+      "reasons": [],
+      "keywords": [],
+      "decision": "unreviewed",
+      "pdf_status": "missing",
+      "local_pdf_path": null,
+      "si_status": "missing",
+      "local_si_path": null
+    },
+    {
+      "candidate_id": "220d86ed6c9e",
+      "title": "Supplemental Material: Climatic regulation of atmospheric mercury deposition: Evidence from mercury isotopes in an alpine peat core",
+      "authors": [
+        "Wen Xue",
+        "et al."
+      ],
+      "journal": "",
+      "year": null,
+      "doi": "10.1130/geol.s.23647029.v1",
+      "abstract": "",
+      "reasons": [],
+      "keywords": [],
+      "decision": "unreviewed",
+      "pdf_status": "missing",
+      "local_pdf_path": null,
+      "si_status": "missing",
+      "local_si_path": null
+    },
+    {
+      "candidate_id": "733acd1f53ed",
+      "title": "Liquid immiscibility and core-shell morphology formation in ternary Al–Bi–Sn alloys",
+      "authors": [
+        "R. Dai",
+        "J.F. Zhang",
+        "S.G. Zhang",
+        "J.G. Li"
+      ],
+      "journal": "Materials Characterization",
+      "year": 2013,
+      "doi": "10.1016/j.matchar.2013.04.006",
+      "abstract": "",
+      "reasons": [],
+      "keywords": [],
+      "decision": "unreviewed",
+      "pdf_status": "missing",
+      "local_pdf_path": null,
+      "si_status": "missing",
+      "local_si_path": null
+    },
+    {
+      "candidate_id": "6aca059fa9a3",
+      "title": "C- and S-rich molten alloy immiscibility and core formation of planetesimals",
+      "authors": [
+        "Alexandre Corgne",
+        "Bernard J. Wood",
+        "Yingwei Fei"
+      ],
+      "journal": "Geochimica et Cosmochimica Acta",
+      "year": 2008,
+      "doi": "10.1016/j.gca.2008.03.001",
+      "abstract": "",
+      "reasons": [],
+      "keywords": [],
+      "decision": "unreviewed",
+      "pdf_status": "missing",
+      "local_pdf_path": null,
+      "si_status": "missing",
+      "local_si_path": null
+    },
+    {
+      "candidate_id": "a3e64d6fbab7",
+      "title": "Core and Mantle Evolution of a Reduced Mercury",
+      "authors": [
+        "Giuseppe Mitri",
+        "Camilla Cioria"
+      ],
+      "journal": "",
+      "year": null,
+      "doi": "10.5194/epsc-dps2025-161",
+      "abstract": "",
+      "reasons": [],
+      "keywords": [],
+      "decision": "unreviewed",
+      "pdf_status": "missing",
+      "local_pdf_path": null,
+      "si_status": "missing",
+      "local_si_path": null
+    },
+    {
+      "candidate_id": "2fbe731d8a90",
+      "title": "Liquid immiscibility",
+      "authors": [],
+      "journal": "SpringerReference",
+      "year": null,
+      "doi": "10.1007/springerreference_5063",
+      "abstract": "",
+      "reasons": [],
+      "keywords": [],
+      "decision": "unreviewed",
+      "pdf_status": "missing",
+      "local_pdf_path": null,
+      "si_status": "missing",
+      "local_si_path": null
+    },
+    {
+      "candidate_id": "82626251549a",
+      "title": "immiscibility, n.",
+      "authors": [],
+      "journal": "Oxford English Dictionary",
+      "year": 2023,
+      "doi": "10.1093/oed/1957703919",
+      "abstract": "",
+      "reasons": [],
+      "keywords": [],
+      "decision": "unreviewed",
+      "pdf_status": "missing",
+      "local_pdf_path": null,
+      "si_status": "missing",
+      "local_si_path": null
+    }
+  ],
+  "expansion_candidates": [
+    {
+      "candidate_id": "exp-Analytical m",
+      "title": "Analytical model of the long-period forced longitude librations of Mercury",
+      "source": "fd8dda8b6d5b",
+      "source_type": "citation"
+    },
+    {
+      "candidate_id": "exp-Theory of th",
+      "title": "Theory of the rotation of Janus and Epimetheus",
+      "source": "fd8dda8b6d5b",
+      "source_type": "citation"
+    },
+    {
+      "candidate_id": "exp-Latitudinal ",
+      "title": "Latitudinal librations of Mercury with a fluid core",
+      "source": "fd8dda8b6d5b",
+      "source_type": "citation"
+    },
+    {
+      "candidate_id": "exp-The rotation",
+      "title": "The rotation of Io with a liquid core",
+      "source": "fd8dda8b6d5b",
+      "source_type": "citation"
+    },
+    {
+      "candidate_id": "exp-Planetary lo",
+      "title": "Planetary long periodic terms in Mercury’s rotation: a two dimensional adiabatic approach",
+      "source": "fd8dda8b6d5b",
+      "source_type": "citation"
+    },
+    {
+      "candidate_id": "exp-Report of th",
+      "title": "Report of the IAU/IAG Working Group on cartographic coordinates and rotational elements: 2006",
+      "source": "fd8dda8b6d5b",
+      "source_type": "citation"
+    },
+    {
+      "candidate_id": "exp-Inertial cor",
+      "title": "Inertial core-mantle coupling and libration of Mercury",
+      "source": "fd8dda8b6d5b",
+      "source_type": "citation"
+    },
+    {
+      "candidate_id": "exp-Large Longit",
+      "title": "Large Longitude Libration of Mercury Reveals a Molten Core",
+      "source": "fd8dda8b6d5b",
+      "source_type": "citation"
+    }
+  ],
+  "blacklist": [],
+  "graph": {
+    "nodes": [
+      {
+        "node_id": "paper:fd8dda8b6d5b",
+        "node_type": "paper",
+        "label": "Core-mantle interactions for Mercury"
+      },
+      {
+        "node_id": "author:b. noyelles",
+        "node_type": "author",
+        "label": "B. Noyelles"
+      },
+      {
+        "node_id": "author:j. dufey",
+        "node_type": "author",
+        "label": "J. Dufey"
+      },
+      {
+        "node_id": "author:a. lemaitre",
+        "node_type": "author",
+        "label": "A. Lemaitre"
+      }
+    ],
+    "edges": [
+      {
+        "edge_id": "edge:paper:fd8dda8b6d5b:author:b. noyelles",
+        "edge_type": "paper-author",
+        "source": "paper:fd8dda8b6d5b",
+        "target": "author:b. noyelles",
+        "label": "author"
+      },
+      {
+        "edge_id": "edge:paper:fd8dda8b6d5b:author:j. dufey",
+        "edge_type": "paper-author",
+        "source": "paper:fd8dda8b6d5b",
+        "target": "author:j. dufey",
+        "label": "author"
+      },
+      {
+        "edge_id": "edge:paper:fd8dda8b6d5b:author:a. lemaitre",
+        "edge_type": "paper-author",
+        "source": "paper:fd8dda8b6d5b",
+        "target": "author:a. lemaitre",
+        "label": "author"
+      }
+    ]
+  }
+}

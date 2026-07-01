@@ -6,6 +6,9 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from app.config import get_settings
+from app.expand import expand_from_candidate
+from app.graph import render_graph_svg, update_graph_for_candidate
+from app.models import Decision
 from app.search import run_search
 from app.store import ProjectStore
 
@@ -17,8 +20,48 @@ templates = Jinja2Templates(directory="app/templates")
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 
-def _workspace_context(project=None, *, query: str = "", search_error: str = ""):
+def _resolve_selected_candidate(project, selected_candidate_id: str = ""):
+    if not project or not project.candidates:
+        return None
+    if selected_candidate_id:
+        try:
+            return project.get_candidate(selected_candidate_id)
+        except KeyError:
+            pass
+    return project.candidates[0]
+
+
+def _merge_expansion_candidates(project, incoming) -> None:
+    accepted_ids = {candidate.candidate_id for candidate in project.candidates}
+    seen = {candidate.candidate_id for candidate in project.expansion_candidates}
+    for item in incoming:
+        raw_candidate_id = item.candidate_id.removeprefix("exp-")
+        if item.candidate_id in project.blacklist or raw_candidate_id in project.blacklist:
+            continue
+        if raw_candidate_id in accepted_ids or item.candidate_id in accepted_ids:
+            continue
+        if item.candidate_id in seen:
+            continue
+        project.expansion_candidates.append(item)
+        seen.add(item.candidate_id)
+
+
+def _workspace_context(project=None, *, query: str = "", search_error: str = "", selected_candidate_id: str = ""):
     projects = store.list_projects()
+    selected_candidate = _resolve_selected_candidate(project, selected_candidate_id)
+    graph_svg = ""
+    if project:
+        graph_svg = render_graph_svg(
+            project.graph,
+            selected_candidate.candidate_id if selected_candidate else None,
+        )
+    accepted_count = 0
+    deferred_count = 0
+    rejected_count = 0
+    if project:
+        accepted_count = sum(1 for candidate in project.candidates if candidate.decision == Decision.YES)
+        deferred_count = sum(1 for candidate in project.candidates if candidate.decision == Decision.DEFER)
+        rejected_count = sum(1 for candidate in project.candidates if candidate.decision == Decision.NO)
     return {
         "app_name": settings.app_name,
         "projects": projects,
@@ -26,6 +69,12 @@ def _workspace_context(project=None, *, query: str = "", search_error: str = "")
         "retrieval_items": store.retrieval_items(project) if project else [],
         "search_query": query,
         "search_error": search_error,
+        "selected_candidate": selected_candidate,
+        "selected_candidate_id": selected_candidate.candidate_id if selected_candidate else "",
+        "graph_svg": graph_svg,
+        "accepted_count": accepted_count,
+        "deferred_count": deferred_count,
+        "rejected_count": rejected_count,
     }
 
 
@@ -55,9 +104,9 @@ def create_project(request: Request, title: str = Form(...), description: str = 
 
 
 @app.get("/projects/{pid}/workspace", response_class=HTMLResponse)
-def project_workspace(request: Request, pid: str):
+def project_workspace(request: Request, pid: str, selected: str = ""):
     project = store.get(pid)
-    context = _workspace_context(project)
+    context = _workspace_context(project, selected_candidate_id=selected)
     context["request"] = request
     return templates.TemplateResponse(
         request=request,
@@ -77,7 +126,41 @@ def search_project(request: Request, pid: str, query: str = Form(...), limit: in
         search_error = f"Search failed: {exc}"
     project.upsert_candidates(results, query=query)
     store.save(project)
-    context = _workspace_context(project, query=query, search_error=search_error)
+    selected_candidate_id = results[0].candidate_id if results else ""
+    context = _workspace_context(
+        project,
+        query=query,
+        search_error=search_error,
+        selected_candidate_id=selected_candidate_id,
+    )
+    context["request"] = request
+    return templates.TemplateResponse(
+        request=request,
+        name="partials/workspace_bundle.html",
+        context=context,
+    )
+
+
+@app.post("/projects/{pid}/candidates/{cid}/decision", response_class=HTMLResponse)
+def decide_candidate(
+    request: Request,
+    pid: str,
+    cid: str,
+    decision: str = Form(...),
+    query: str = Form(""),
+):
+    project = store.get(pid)
+    candidate = project.set_decision(cid, Decision(decision))
+    if candidate.decision == Decision.YES:
+        update_graph_for_candidate(project, candidate)
+        _merge_expansion_candidates(project, expand_from_candidate(candidate, limit=8))
+        project.expansion_candidates = [
+            item
+            for item in project.expansion_candidates
+            if item.candidate_id not in {cid, f"exp-{cid}"}
+        ]
+    store.save(project)
+    context = _workspace_context(project, query=query, selected_candidate_id=cid)
     context["request"] = request
     return templates.TemplateResponse(
         request=request,
