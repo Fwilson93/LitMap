@@ -9,8 +9,8 @@ README.md | size=2300 bytes [priority]
 app/__init__.py | size=0 bytes
 app/config.py | size=709 bytes
 app/graph.py | size=4091 bytes [priority]
-app/main.py | size=174 bytes [priority]
-app/models.py | size=2386 bytes [priority]
+app/main.py | size=5627 bytes [priority]
+app/models.py | size=603 bytes [priority]
 app/providers/base.py | size=219 bytes
 app/providers/mock.py | size=1644 bytes
 app/providers/openalex.py | size=1666 bytes
@@ -30,7 +30,7 @@ litmap_slim.egg-info/requires.txt | size=145 bytes
 litmap_slim.egg-info/top_level.txt | size=12 bytes
 notes/PROJECT_INTENT.md | size=835 bytes [priority]
 pyproject.toml | size=761 bytes [priority]
-run_litmap.sh | size=3388 bytes
+run_litmap.sh | size=3358 bytes
 scripts/__init__.py | size=0 bytes
 scripts/_context_common.py | size=2169 bytes
 scripts/commit_and_push.sh | size=220 bytes
@@ -282,107 +282,239 @@ def render_graph_svg(graph: Graph, selected_candidate_id: Optional[str] = None) 
 ===== FILE: app/main.py =====
 
 Path: app/main.py
-Size: 174 bytes
+Size: 5627 bytes
 ```py
+from __future__ import annotations
 
-# ONLY PATCHED ENDPOINT SHOWN
+from pathlib import Path
+from typing import Optional
+
+from fastapi import FastAPI, Form, HTTPException, Request
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+
+from app.config import get_settings
+from app.graph import render_graph_svg, update_graph_for_candidate
+from app.models import Decision, Graph
 from app.search import run_search
+from app.store import ProjectStore
 
-# inside route
-# replace project.upsert_candidates with:
-# project.replace_candidates(results, query=query)
+settings = get_settings()
+store = ProjectStore(settings.projects_dir, settings.library_dir, settings.exports_dir)
+
+app = FastAPI(title=settings.app_name)
+
+app.mount(
+    "/static",
+    StaticFiles(directory=Path(__file__).resolve().parent / "static"),
+    name="static",
+)
+
+templates = Jinja2Templates(
+    directory=str(Path(__file__).resolve().parent / "templates")
+)
+
+
+def _page_context(
+    project_id: Optional[str] = None,
+    selected_candidate_id: Optional[str] = None,
+) -> dict[str, object]:
+
+    projects = store.list_projects()
+    project = (
+        store.get(project_id)
+        if project_id
+        else (projects[0] if projects else None)
+    )
+
+    selected_candidate = None
+    retrieval_items = []
+
+    if project:
+        retrieval_items = store.retrieval_items(project)
+
+        if selected_candidate_id:
+            try:
+                selected_candidate = project.get_candidate(selected_candidate_id)
+            except KeyError:
+                selected_candidate = project.candidates[0] if project.candidates else None
+        elif project.candidates:
+            selected_candidate = project.candidates[0]
+
+    graph_svg = render_graph_svg(
+        project.graph if project else Graph(),
+        selected_candidate_id=selected_candidate_id,
+    )
+
+    return {
+        "request": None,
+        "app_name": settings.app_name,
+        "projects": projects,
+        "project": project,
+        "selected_candidate": selected_candidate,
+        "retrieval_items": retrieval_items,
+        "graph_svg": graph_svg,
+        "export_dir": None,
+    }
+
+
+def _workspace_response(request: Request, context: dict[str, object]) -> HTMLResponse:
+    context["request"] = request
+    return templates.TemplateResponse(request, "partials/workspace_bundle.html", context)
+
+
+@app.get("/", response_class=HTMLResponse)
+def index(request: Request) -> HTMLResponse:
+    context = _page_context()
+    context["request"] = request
+    return templates.TemplateResponse(request, "page.html", context)
+
+
+@app.get("/projects/{project_id}/workspace", response_class=HTMLResponse)
+def project_workspace(
+    request: Request,
+    project_id: str,
+    candidate_id: Optional[str] = None,
+) -> HTMLResponse:
+    return _workspace_response(request, _page_context(project_id, candidate_id))
+
+
+@app.post("/projects", response_class=HTMLResponse)
+def create_project(
+    request: Request,
+    title: str = Form(...),
+    description: str = Form(""),
+) -> HTMLResponse:
+    project = store.create_project(title=title, description=description)
+    return _workspace_response(request, _page_context(project.project_id))
+
+
+@app.post("/projects/{project_id}/search", response_class=HTMLResponse)
+def search_project(
+    request: Request,
+    project_id: str,
+    query: str = Form(...),
+    limit: int = Form(8),
+) -> HTMLResponse:
+    project = store.get(project_id)
+
+    results = run_search(query=query, limit=limit)
+
+    # ✅ NEW behaviour (replace, not accumulate)
+    project.replace_candidates(results, query=query)
+
+    store.save(project)
+
+    focus = project.candidates[0].candidate_id if project.candidates else None
+
+    return _workspace_response(request, _page_context(project_id, focus))
+
+
+@app.post(
+    "/projects/{project_id}/candidates/{candidate_id}/select",
+    response_class=HTMLResponse,
+)
+def select_candidate(
+    request: Request,
+    project_id: str,
+    candidate_id: str,
+) -> HTMLResponse:
+    return _workspace_response(request, _page_context(project_id, candidate_id))
+
+
+@app.post(
+    "/projects/{project_id}/candidates/{candidate_id}/decision",
+    response_class=HTMLResponse,
+)
+def decide_candidate(
+    request: Request,
+    project_id: str,
+    candidate_id: str,
+    decision: str = Form(...),
+    notes: str = Form(""),
+) -> HTMLResponse:
+
+    project = store.get(project_id)
+
+    try:
+        parsed = Decision(decision)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Invalid decision.") from exc
+
+    candidate = project.set_decision(candidate_id, parsed, notes=notes)
+
+    if parsed == Decision.YES:
+        update_graph_for_candidate(project, candidate)
+
+    store.save(project)
+
+    return _workspace_response(request, _page_context(project_id, candidate_id))
+
+
+@app.post("/projects/{project_id}/library/scan", response_class=HTMLResponse)
+def scan_library(
+    request: Request,
+    project_id: str,
+    candidate_id: Optional[str] = Form(None),
+) -> HTMLResponse:
+
+    project = store.get(project_id)
+    store.scan_library(project)
+
+    return _workspace_response(request, _page_context(project_id, candidate_id))
+
+
+@app.post("/projects/{project_id}/export", response_class=HTMLResponse)
+def export_project(
+    request: Request,
+    project_id: str,
+    candidate_id: Optional[str] = Form(None),
+) -> HTMLResponse:
+
+    project = store.get(project_id)
+    export_dir = store.export_project(project)
+
+    context = _page_context(project_id, candidate_id)
+
+    try:
+        context["export_dir"] = export_dir.relative_to(settings.repo_root)
+    except ValueError:
+        context["export_dir"] = export_dir
+
+    return _workspace_response(request, context)
 ```
 
 ===== FILE: app/models.py =====
 
 Path: app/models.py
-Size: 2386 bytes
+Size: 603 bytes
 ```py
+@classmethod
+def create(cls, title: str, description: str = "") -> "Project":
+    project = cls(
+        project_id=slugify(title),
+        title=title,
+        description=description,
+    )
 
-from __future__ import annotations
-from datetime import datetime, timezone
-from enum import Enum
-from typing import Any, Optional
-from uuid import uuid4
-from pydantic import BaseModel, Field
+    project.timeline.append(
+        TimelineEvent(
+            event_type="project_created",
+            message=f"Created project '{title}'.",
+            payload={"title": title},
+        )
+    )
 
-
-def utc_now() -> datetime:
-    return datetime.now(timezone.utc)
-
-
-def make_id(prefix: str) -> str:
-    return f"{prefix}_{uuid4().hex[:10]}"
-
-
-def slugify(value: str) -> str:
-    cleaned: list[str] = []
-    last_dash = False
-    for char in value.lower().strip():
-        if char.isalnum():
-            cleaned.append(char)
-            last_dash = False
-        elif not last_dash:
-            cleaned.append("-")
-            last_dash = True
-    return "".join(cleaned).strip("-") or "project"
+    return project
 
 
-class Decision(str, Enum):
-    UNREVIEWED = "unreviewed"
-    YES = "yes"
-    NO = "no"
-    DEFER = "defer"
+def touch(self) -> None:
+    self.updated_at = utc_now()
 
 
-class Candidate(BaseModel):
-    candidate_id: str
-    title: str
-    authors: list[str] = Field(default_factory=list)
-    journal: str = ""
-    year: Optional[int] = None
-    doi: Optional[str] = None
-    abstract: str = ""
-    reasons: list[str] = Field(default_factory=list)
-    keywords: list[str] = Field(default_factory=list)
-    decision: Decision = Decision.UNREVIEWED
-    notes: str = ""
-    local_pdf_present: bool = False
-    local_pdf_path: Optional[str] = None
-    local_supplement_present: bool = False
-    local_supplement_path: Optional[str] = None
-
-
-class Graph(BaseModel):
-    nodes: list[Any] = Field(default_factory=list)
-    edges: list[Any] = Field(default_factory=list)
-
-
-class Project(BaseModel):
-    project_id: str
-    title: str
-    description: str = ""
-    search_query: str = ""
-    created_at: datetime = Field(default_factory=utc_now)
-    updated_at: datetime = Field(default_factory=utc_now)
-    candidates: list[Candidate] = Field(default_factory=list)
-    graph: Graph = Field(default_factory=Graph)
-    timeline: list[Any] = Field(default_factory=list)
-
-    def replace_candidates(self, incoming, query: str) -> None:
-        existing = {c.candidate_id: c for c in self.candidates}
-        new_candidates = []
-
-        for item in incoming:
-            if item.candidate_id in existing:
-                current = existing[item.candidate_id]
-                item.decision = current.decision
-                item.notes = current.notes
-
-            new_candidates.append(item)
-
-        self.candidates = new_candidates
-        self.search_query = query
+def candidate_map(self) -> dict[str, Candidate]:
+    return {candidate.candidate_id: candidate for candidate in self.candidates}
 ```
 
 ===== FILE: app/providers/base.py =====
@@ -1190,7 +1322,7 @@ app = ["templates/**/*.html", "static/*.css", "static/*.js"]
 ===== FILE: run_litmap.sh =====
 
 Path: run_litmap.sh
-Size: 3388 bytes
+Size: 3358 bytes
 ```sh
 #!/usr/bin/env bash
 set -Eeuo pipefail
@@ -1198,6 +1330,7 @@ set -Eeuo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VENV_DIR="${REPO_ROOT}/.venv"
 APP_MODULE="app.main:app"
+
 HOST="${LITMAP_HOST:-127.0.0.1}"
 PREFERRED_PORT="${LITMAP_PORT:-8000}"
 OPEN_BROWSER="${LITMAP_OPEN_BROWSER:-1}"
@@ -1230,14 +1363,13 @@ find_python() {
 find_free_port() {
   python_bin="$1"
   preferred="$2"
+
   "$python_bin" - "$preferred" <<'PY'
 import socket
 import sys
 
-log "Clearing Python cache (__pycache__ directories)..."
-find "$REPO_ROOT" -name "__pycache__" -type d -exec rm -r {} + || true
-
 preferred = int(sys.argv[1])
+
 for port in [preferred, *range(preferred + 1, preferred + 100)]:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -1245,15 +1377,17 @@ for port in [preferred, *range(preferred + 1, preferred + 100)]:
             sock.bind(("127.0.0.1", port))
         except OSError:
             continue
+
     print(port)
     raise SystemExit(0)
-raise SystemExit("No free port found in scan range")
+
+raise SystemExit("No free port found")
 PY
 }
 
 package_check() {
   "$1" - <<'PY'
-mods = ["fastapi", "uvicorn", "jinja2", "pydantic", "multipart"]
+mods = ["fastapi", "uvicorn", "jinja2", "pydantic", "multipart", "httpx"]
 for mod in mods:
     __import__(mod)
 PY
@@ -1261,9 +1395,11 @@ PY
 
 open_url() {
   url="$1"
+
   if [[ "$OPEN_BROWSER" != "1" ]]; then
     return 0
   fi
+
   if command -v open >/dev/null 2>&1; then
     (sleep 1; open "$url" >/dev/null 2>&1 || true) &
   elif command -v xdg-open >/dev/null 2>&1; then
@@ -1272,7 +1408,6 @@ open_url() {
 }
 
 cleanup() {
-  # No environment leakage: the launcher uses the venv's Python directly.
   if [[ -n "${SERVER_PID:-}" ]]; then
     if kill -0 "$SERVER_PID" >/dev/null 2>&1; then
       log "Stopping LitMap server..."
@@ -1281,17 +1416,27 @@ cleanup() {
     fi
   fi
 }
+
 trap cleanup EXIT INT TERM
 
 cd "$REPO_ROOT"
-[[ -f "${REPO_ROOT}/pyproject.toml" ]] || fail "pyproject.toml not found in ${REPO_ROOT}"
-[[ -f "${REPO_ROOT}/app/main.py" ]] || fail "app/main.py not found in ${REPO_ROOT}"
 
-PYTHON_BIN="$(find_python)" || fail "Python 3.9+ is required"
+[[ -f "pyproject.toml" ]] || fail "pyproject.toml not found"
+[[ -f "app/main.py" ]] || fail "app/main.py not found"
+
+PYTHON_BIN="$(find_python)" || fail "Python 3.9+ required"
 need_cmd "$PYTHON_BIN"
 
+# -------------------------------
+# ✅ NEW: clear cache (safe + robust)
+# -------------------------------
+log "Clearing Python cache (__pycache__ directories)..."
+find "$REPO_ROOT" -name "__pycache__" -type d -exec rm -r {} + || true
+# -------------------------------
+
+
 if [[ ! -x "${VENV_DIR}/bin/python" ]]; then
-  log "Creating virtual environment at .venv"
+  log "Creating virtual environment"
   "$PYTHON_BIN" -m venv "$VENV_DIR"
 fi
 
@@ -1302,28 +1447,31 @@ import sys
 raise SystemExit(0 if sys.version_info >= (3, 9) else 1)
 PY
 then
-  fail "The virtual environment must use Python 3.9 or newer"
+  fail "Virtual env must use Python >=3.9"
 fi
 
 log "Ensuring dependencies are installed"
+
 if ! package_check "$VENV_PY" >/dev/null 2>&1; then
   "$VENV_PY" -m pip install --upgrade pip
   "$VENV_PY" -m pip install -e '.[dev]'
 fi
 
-PORT="$(find_free_port "$VENV_PY" "$PREFERRED_PORT")" || fail "Could not find a free port"
+PORT="$(find_free_port "$VENV_PY" "$PREFERRED_PORT")" || fail "No free port found"
 URL="http://${HOST}:${PORT}"
 
 if [[ "$PORT" != "$PREFERRED_PORT" ]]; then
-  log "Port ${PREFERRED_PORT} is in use; using ${PORT} instead"
+  log "Port ${PREFERRED_PORT} is in use; using ${PORT}"
 fi
 
 log "Starting LitMap at ${URL}"
 log "Press Ctrl+C to stop cleanly"
+
 open_url "$URL"
 
 "$VENV_PY" -m uvicorn "$APP_MODULE" --reload --host "$HOST" --port "$PORT" &
 SERVER_PID=$!
+
 wait "$SERVER_PID"
 ```
 
