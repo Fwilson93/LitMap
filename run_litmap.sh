@@ -40,6 +40,9 @@ find_free_port() {
 import socket
 import sys
 
+log "Clearing Python cache (__pycache__ directories)..."
+find "$REPO_ROOT" -name "__pycache__" -type d -exec rm -r {} + || true
+
 preferred = int(sys.argv[1])
 for port in [preferred, *range(preferred + 1, preferred + 100)]:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:

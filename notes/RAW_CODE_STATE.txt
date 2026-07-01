@@ -30,7 +30,7 @@ litmap_slim.egg-info/requires.txt | size=145 bytes
 litmap_slim.egg-info/top_level.txt | size=12 bytes
 notes/PROJECT_INTENT.md | size=835 bytes [priority]
 pyproject.toml | size=761 bytes [priority]
-run_litmap.sh | size=3259 bytes
+run_litmap.sh | size=3388 bytes
 scripts/__init__.py | size=0 bytes
 scripts/_context_common.py | size=2169 bytes
 scripts/commit_and_push.sh | size=220 bytes
@@ -1190,7 +1190,7 @@ app = ["templates/**/*.html", "static/*.css", "static/*.js"]
 ===== FILE: run_litmap.sh =====
 
 Path: run_litmap.sh
-Size: 3259 bytes
+Size: 3388 bytes
 ```sh
 #!/usr/bin/env bash
 set -Eeuo pipefail
@@ -1233,6 +1233,9 @@ find_free_port() {
   "$python_bin" - "$preferred" <<'PY'
 import socket
 import sys
+
+log "Clearing Python cache (__pycache__ directories)..."
+find "$REPO_ROOT" -name "__pycache__" -type d -exec rm -r {} + || true
 
 preferred = int(sys.argv[1])
 for port in [preferred, *range(preferred + 1, preferred + 100)]:
