@@ -12,9 +12,9 @@ app/graph.py | size=4091 bytes [priority]
 app/main.py | size=5324 bytes [priority]
 app/models.py | size=5051 bytes [priority]
 app/providers/base.py | size=219 bytes
-app/providers/mock.py | size=771 bytes
+app/providers/mock.py | size=1644 bytes
 app/providers/openalex.py | size=1666 bytes
-app/search.py | size=305 bytes [priority]
+app/search.py | size=386 bytes [priority]
 app/static/app.css | size=5402 bytes
 app/static/app.js | size=180 bytes
 app/store.py | size=5826 bytes [priority]
@@ -598,30 +598,60 @@ class SearchProvider(ABC):
 ===== FILE: app/providers/mock.py =====
 
 Path: app/providers/mock.py
-Size: 771 bytes
+Size: 1644 bytes
 ```py
-
-from app.search import CATALOGUE
-from app.models import Candidate
 from hashlib import sha1
+from dataclasses import dataclass
+from typing import Optional
+from app.models import Candidate
+
+@dataclass(frozen=True)
+class SearchRecord:
+    title: str
+    authors: tuple[str, ...]
+    journal: str
+    year: Optional[int]
+    doi: Optional[str]
+    abstract: str
+    keywords: tuple[str, ...]
+    reasons: tuple[str, ...] = ()
+
+CATALOGUE: tuple[SearchRecord, ...] = (
+    SearchRecord(
+        title="Thermal and electrical conductivity of iron at Earth's core conditions",
+        authors=("Matteo Pozzo", "Chris Davies", "David Gubbins", "Dario Alfè"),
+        journal="Nature",
+        year=2012,
+        doi="10.1038/nature11031",
+        abstract="Classic conductivity paper covering iron at core conditions.",
+        keywords=("conductivity", "iron", "core"),
+        reasons=("concept:core transport",),
+    ),
+    # (you can keep or extend this later)
+)
 
 class MockProvider:
     def search(self, query: str, limit: int):
         results = []
+
         for record in CATALOGUE[:limit]:
             identity = record.doi or record.title
-            cid = sha1(identity.encode('utf-8')).hexdigest()[:12]
-            results.append(Candidate(
-                candidate_id=cid,
-                title=record.title,
-                authors=list(record.authors),
-                journal=record.journal,
-                year=record.year,
-                doi=record.doi,
-                abstract=record.abstract,
-                reasons=list(record.reasons),
-                keywords=list(record.keywords),
-            ))
+            cid = sha1(identity.encode("utf-8")).hexdigest()[:12]
+
+            results.append(
+                Candidate(
+                    candidate_id=cid,
+                    title=record.title,
+                    authors=list(record.authors),
+                    journal=record.journal,
+                    year=record.year,
+                    doi=record.doi,
+                    abstract=record.abstract,
+                    reasons=list(record.reasons),
+                    keywords=list(record.keywords),
+                )
+            )
+
         return results
 ```
 
@@ -684,9 +714,8 @@ class OpenAlexProvider:
 ===== FILE: app/search.py =====
 
 Path: app/search.py
-Size: 305 bytes
+Size: 386 bytes
 ```py
-
 from app.providers.openalex import OpenAlexProvider
 from app.providers.mock import MockProvider
 
@@ -694,8 +723,10 @@ from app.providers.mock import MockProvider
 def run_search(query: str, limit: int = 12):
     provider = OpenAlexProvider()
     try:
+        print(">>> Using OpenAlex")
         return provider.search(query, limit)
-    except Exception:
+    except Exception as e:
+        print(">>> OpenAlex failed:", e)
         return MockProvider().search(query, limit)
 ```
 
