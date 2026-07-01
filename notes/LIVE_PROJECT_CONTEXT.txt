@@ -1,5 +1,5 @@
 LIVE PROJECT CONTEXT
-Generated: 2026-07-01T11:55:52.818694+00:00
+Generated: 2026-07-01T12:09:37.715163+00:00
 Repository root: /Users/fwilson/Documents/Data/litmap_slim
 ===== PROJECT INTENT =====
 
@@ -119,7 +119,7 @@ That means the context pack is tuned for LLM handoff rather than raw archival co
 ===== GIT SNAPSHOT =====
 
 Branch: main
-Commit: 77f7f364f0f256e20ce3a96142ea94ee95c3bbda
+Commit: 114ed63fe5d4fad42faf3c479dcbb20940e84275
 
 Status:
 D .venv/lib/python3.9/site-packages/__pycache__/py.cpython-39.pyc
@@ -227,21 +227,12 @@ D .venv/lib/python3.9/site-packages/__pycache__/py.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/anyio/streams/__pycache__/memory.cpython-39-pytest-8.4.2.pyc
  D .venv/lib/python3.9/site-packages/anyio/streams/__pycache__/stapled.cpython-39-pytest-8.4.2.pyc
  D .venv/lib/python3.9/site-packages/anyio/streams/__pycache__/tls.cpython-39-pytest-8.4.2.pyc
+ M .venv/lib/python3.9/site-packages/click/__pycache__/_compat.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/click/__pycache__/types.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/fastapi/__pycache__/testclient.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/fastapi/__pycache__/utils.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/fastapi/openapi/__pycache__/constants.cpython-39.pyc
- M .venv/lib/python3.9/site-packages/httpx/__pycache__/__init__.cpython-39.pyc
- M .venv/lib/python3.9/site-packages/httpx/__pycache__/_api.cpython-39.pyc
- M .venv/lib/python3.9/site-packages/httpx/__pycache__/_auth.cpython-39.pyc
- M .venv/lib/python3.9/site-packages/httpx/__pycache__/_client.cpython-39.pyc
- M .venv/lib/python3.9/site-packages/httpx/__pycache__/_decoders.cpython-39.pyc
- M .venv/lib/python3.9/site-packages/httpx/__pycache__/_main.cpython-39.pyc
- M .venv/lib/python3.9/site-packages/httpx/__pycache__/_models.cpython-39.pyc
- M .venv/lib/python3.9/site-packages/httpx/__pycache__/_multipart.cpython-39.pyc
- M .venv/lib/python3.9/site-packages/httpx/_transports/__pycache__/asgi.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/idna/__pycache__/core.cpython-39.pyc
- M .venv/lib/python3.9/site-packages/idna/__pycache__/intranges.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/iniconfig/__pycache__/__init__.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/iniconfig/__pycache__/_parse.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/iniconfig/__pycache__/exceptions.cpython-39.pyc
@@ -249,7 +240,6 @@ D .venv/lib/python3.9/site-packages/__pycache__/py.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/jinja2/__pycache__/filters.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/jinja2/__pycache__/nodes.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/jinja2/__pycache__/parser.cpython-39.pyc
- M .venv/lib/python3.9/site-packages/jinja2/__pycache__/utils.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/pluggy/__pycache__/__init__.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/pluggy/__pycache__/_callers.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/pluggy/__pycache__/_hooks.cpython-39.pyc
@@ -259,7 +249,6 @@ D .venv/lib/python3.9/site-packages/__pycache__/py.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/pluggy/__pycache__/_version.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/pluggy/__pycache__/_warnings.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/pydantic/__pycache__/_migration.cpython-39.pyc
- M .venv/lib/python3.9/site-packages/pydantic/__pycache__/fields.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/pydantic/__pycache__/json_schema.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/pydantic/__pycache__/version.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/pydantic/_internal/__pycache__/_config.cpython-39.pyc
@@ -273,16 +262,13 @@ D .venv/lib/python3.9/site-packages/__pycache__/py.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/pygments/__pycache__/filter.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/pygments/__pycache__/formatter.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/pygments/__pycache__/lexer.cpython-39.pyc
- M .venv/lib/python3.9/site-packages/pygments/__pycache__/modeline.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/pygments/__pycache__/regexopt.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/pygments/__pycache__/token.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/pygments/__pycache__/unistring.cpython-39.pyc
- M .venv/lib/python3.9/site-packages/pygments/__pycache__/util.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/pygments/filters/__pycache__/__init__.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/pygments/formatters/__pycache__/__init__.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/pygments/formatters/__pycache__/_mapping.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/pygments/formatters/__pycache__/terminal.cpython-39.pyc
- M .venv/lib/python3.9/site-packages/pygments/lexers/__pycache__/_mapping.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/pygments/lexers/__pycache__/diff.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/pygments/lexers/__pycache__/python.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/pygments/styles/__pycache__/__init__.cpython-39.pyc
@@ -296,40 +282,32 @@ D .venv/lib/python3.9/site-packages/__pycache__/py.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/tomli/__pycache__/_parser.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/tomli/__pycache__/_re.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/typing_inspection/__pycache__/introspection.cpython-39.pyc
- M .venv/lib/python3.9/site-packages/uvicorn/middleware/__pycache__/proxy_headers.cpython-39.pyc
- M app/__pycache__/main.cpython-39.pyc
  M app/__pycache__/models.cpython-39.pyc
- D app/__pycache__/search.cpython-39.pyc
- D app/__pycache__/store.cpython-39.pyc
- M app/main.py
  M app/models.py
- D app/providers/__pycache__/semantic_scholar.cpython-39.pyc
- M run_litmap.sh
  M scripts/__pycache__/_context_common.cpython-39.pyc
  D tests/__pycache__/conftest.cpython-39-pytest-8.4.2.pyc
  D tests/__pycache__/test_app.cpython-39-pytest-8.4.2.pyc
  D tests/__pycache__/test_store.cpython-39-pytest-8.4.2.pyc
  D tests/__pycache__/test_tools.cpython-39-pytest-8.4.2.pyc
-?? .venv/lib/python3.9/site-packages/fastapi/__pycache__/staticfiles.cpython-39.pyc
-?? .venv/lib/python3.9/site-packages/fastapi/__pycache__/templating.cpython-39.pyc
-?? .venv/lib/python3.9/site-packages/starlette/__pycache__/staticfiles.cpython-39.pyc
-?? .venv/lib/python3.9/site-packages/starlette/__pycache__/templating.cpython-39.pyc
-?? app/__pycache__/config.cpython-39.pyc
-?? app/__pycache__/graph.cpython-39.pyc
+?? .venv/lib/python3.9/site-packages/anyio/_backends/__pycache__/__init__.cpython-39.pyc
+?? .venv/lib/python3.9/site-packages/anyio/_backends/__pycache__/_asyncio.cpython-39.pyc
+?? .venv/lib/python3.9/site-packages/certifi/__pycache__/
+?? .venv/lib/python3.9/site-packages/httpcore/__pycache__/
+?? .venv/lib/python3.9/site-packages/httpcore/_async/__pycache__/
+?? .venv/lib/python3.9/site-packages/httpcore/_backends/__pycache__/
+?? .venv/lib/python3.9/site-packages/httpcore/_sync/__pycache__/
+?? .venv/lib/python3.9/site-packages/pydantic/v1/__pycache__/
+?? app/__pycache__/search.cpython-39.pyc
+?? app/__pycache__/store.cpython-39.pyc
+?? app/providers/__pycache__/
+?? data/projects/test5.json
+?? data/projects/test6.json
+?? litmap_full_fix_batch.zip
 
 ===== AUTOMATED CHECKS =====
 
-Return code: 2
-==================================== ERRORS ====================================
-_____________________ ERROR collecting tests/test_store.py _____________________
-tests/test_store.py:5: in <module>
-    from app.models import Candidate, Decision
-app/models.py:24: in <module>
-    def candidate_map(self) -> dict[str, Candidate]:
-E   NameError: name 'Candidate' is not defined
-=========================== short test summary info ============================
-ERROR tests/test_store.py - NameError: name 'Candidate' is not defined
-!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+Return code: 0
+........                                                                 [100%]
 
 ===== REPOSITORY TREE =====
 
@@ -358,6 +336,7 @@ ERROR tests/test_store.py - NameError: name 'Candidate' is not defined
       - workspace_bundle.html
 - first_statup.txt
 - fix_batch.zip
+- litmap_full_fix_batch.zip
 - litmap_slim.egg-info/
   - PKG-INFO
   - SOURCES.txt
@@ -391,7 +370,7 @@ ERROR tests/test_store.py - NameError: name 'Candidate' is not defined
 - app/config.py (709 bytes)
 - app/graph.py (4091 bytes) [priority]
 - app/main.py (5627 bytes) [priority]
-- app/models.py (603 bytes) [priority]
+- app/models.py (5853 bytes) [priority]
 - app/providers/base.py (219 bytes)
 - app/providers/mock.py (1644 bytes)
 - app/providers/openalex.py (1666 bytes)
