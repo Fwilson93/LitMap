@@ -12,12 +12,10 @@ class SemanticScholarProvider:
             "limit": limit,
             "fields": "title,authors,year,venue,abstract,externalIds"
         }
-        try:
-            r = httpx.get(API_URL, params=params, timeout=10)
-            r.raise_for_status()
-            data = r.json()
-        except Exception as e:
-            raise RuntimeError(f"SemanticScholar request failed: {e}")
+
+        r = httpx.get(API_URL, params=params, timeout=10)
+        r.raise_for_status()
+        data = r.json()
 
         results = []
         for item in data.get("data", []):
@@ -25,7 +23,7 @@ class SemanticScholarProvider:
             authors = [a.get("name", "") for a in item.get("authors", [])]
             year = item.get("year")
             journal = item.get("venue", "")
-            abstract = item.get("abstract", "")
+            abstract = item.get("abstract", "") or ""
 
             doi = None
             ext = item.get("externalIds") or {}
@@ -42,9 +40,12 @@ class SemanticScholarProvider:
                 journal=journal,
                 year=year,
                 doi=doi,
-                abstract=abstract or "",
+                abstract=abstract,
                 reasons=[],
                 keywords=[]
             ))
+
+        if not results:
+            raise RuntimeError("SemanticScholar returned no results")
 
         return results

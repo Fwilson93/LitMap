@@ -1,5 +1,5 @@
 LIVE PROJECT CONTEXT
-Generated: 2026-07-01T11:03:31.649453+00:00
+Generated: 2026-07-01T11:05:53.585810+00:00
 Repository root: /Users/fwilson/Documents/Data/litmap_slim
 ===== PROJECT INTENT =====
 
@@ -119,12 +119,13 @@ That means the context pack is tuned for LLM handoff rather than raw archival co
 ===== GIT SNAPSHOT =====
 
 Branch: main
-Commit: 23c630886e25d876081482420c4e36ed73e9bab9
+Commit: c83ebd34bda27a6079d8f8cda026907120343851
 
 Status:
-M app/search.py
-?? app/providers/semantic_scholar.py
-?? litmap_batch1b.zip
+M app/providers/semantic_scholar.py
+ M app/search.py
+?? data/projects/test3.json
+?? litmap_batch1b_fixed.zip
 
 ===== AUTOMATED CHECKS =====
 
@@ -158,6 +159,7 @@ Return code: 0
       - workspace_bundle.html
 - first_statup.txt
 - litmap_batch1b.zip
+- litmap_batch1b_fixed.zip
 - litmap_slim.egg-info/
   - PKG-INFO
   - SOURCES.txt
@@ -195,8 +197,8 @@ Return code: 0
 - app/providers/base.py (219 bytes)
 - app/providers/mock.py (1644 bytes)
 - app/providers/openalex.py (1666 bytes)
-- app/providers/semantic_scholar.py (1525 bytes)
-- app/search.py (462 bytes) [priority]
+- app/providers/semantic_scholar.py (1494 bytes)
+- app/search.py (679 bytes) [priority]
 - app/static/app.css (5402 bytes)
 - app/static/app.js (180 bytes)
 - app/store.py (5826 bytes) [priority]

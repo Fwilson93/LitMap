@@ -14,8 +14,8 @@ app/models.py | size=5051 bytes [priority]
 app/providers/base.py | size=219 bytes
 app/providers/mock.py | size=1644 bytes
 app/providers/openalex.py | size=1666 bytes
-app/providers/semantic_scholar.py | size=1525 bytes
-app/search.py | size=462 bytes [priority]
+app/providers/semantic_scholar.py | size=1494 bytes
+app/search.py | size=679 bytes [priority]
 app/static/app.css | size=5402 bytes
 app/static/app.js | size=180 bytes
 app/store.py | size=5826 bytes [priority]
@@ -715,7 +715,7 @@ class OpenAlexProvider:
 ===== FILE: app/providers/semantic_scholar.py =====
 
 Path: app/providers/semantic_scholar.py
-Size: 1525 bytes
+Size: 1494 bytes
 ```py
 
 import httpx
@@ -731,12 +731,10 @@ class SemanticScholarProvider:
             "limit": limit,
             "fields": "title,authors,year,venue,abstract,externalIds"
         }
-        try:
-            r = httpx.get(API_URL, params=params, timeout=10)
-            r.raise_for_status()
-            data = r.json()
-        except Exception as e:
-            raise RuntimeError(f"SemanticScholar request failed: {e}")
+
+        r = httpx.get(API_URL, params=params, timeout=10)
+        r.raise_for_status()
+        data = r.json()
 
         results = []
         for item in data.get("data", []):
@@ -744,7 +742,7 @@ class SemanticScholarProvider:
             authors = [a.get("name", "") for a in item.get("authors", [])]
             year = item.get("year")
             journal = item.get("venue", "")
-            abstract = item.get("abstract", "")
+            abstract = item.get("abstract", "") or ""
 
             doi = None
             ext = item.get("externalIds") or {}
@@ -761,10 +759,13 @@ class SemanticScholarProvider:
                 journal=journal,
                 year=year,
                 doi=doi,
-                abstract=abstract or "",
+                abstract=abstract,
                 reasons=[],
                 keywords=[]
             ))
+
+        if not results:
+            raise RuntimeError("SemanticScholar returned no results")
 
         return results
 ```
@@ -772,7 +773,7 @@ class SemanticScholarProvider:
 ===== FILE: app/search.py =====
 
 Path: app/search.py
-Size: 462 bytes
+Size: 679 bytes
 ```py
 
 from app.providers.semantic_scholar import SemanticScholarProvider
@@ -782,11 +783,16 @@ from app.providers.mock import MockProvider
 
 def run_search(query: str, limit: int = 12):
     try:
+        print(">>> SemanticScholar")
         return SemanticScholarProvider().search(query, limit)
     except Exception as e:
+        print(">>> SemanticScholar failed:", e)
         try:
+            print(">>> OpenAlex")
             return OpenAlexProvider().search(query, limit)
-        except Exception:
+        except Exception as e2:
+            print(">>> OpenAlex failed:", e2)
+            print(">>> Falling back to mock")
             return MockProvider().search(query, limit)
 ```
 
