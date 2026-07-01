@@ -1,5 +1,5 @@
 LIVE PROJECT CONTEXT
-Generated: 2026-07-01T18:16:50.158608+00:00
+Generated: 2026-07-01T18:25:49.198752+00:00
 Repository root: /Users/fwilson/Documents/Data/litmap_slim
 ===== PROJECT INTENT =====
 
@@ -130,15 +130,14 @@ uvicorn app.main:app --reload
 ===== GIT SNAPSHOT =====
 
 Branch: main
-Commit: 255cb5b615aff7229f04241a502a23292476c85a
+Commit: 58211268287219d6de5927e76d7090b5eb23dcab
 
 Status:
 M app/main.py
  M app/models.py
- M app/store.py
  M app/templates/partials/workspace.html
- D litmap_final_production_batch.zip
-?? litmap_batch_A_retrieval_complete.zip
+ D litmap_batch_A_retrieval_complete.zip
+?? litmap_batch_B_final.zip
 
 ===== AUTOMATED CHECKS =====
 
@@ -154,7 +153,7 @@ tests/test_store.py:6: in <module>
     from app.store import ProjectStore
 app/store.py:2: in <module>
     from app.models import Project, RetrievalItem
-E   ImportError: cannot import name 'Project' from 'app.models' (/Users/fwilson/Documents/Data/litmap_slim/app/models.py)
+E   ImportError: cannot import name 'RetrievalItem' from 'app.models' (/Users/fwilson/Documents/Data/litmap_slim/app/models.py)
 =========================== short test summary info ============================
 ERROR tests/test_store.py
 !!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
@@ -187,7 +186,7 @@ ERROR tests/test_store.py
       - workspace.html
       - workspace_bundle.html
 - first_statup.txt
-- litmap_batch_A_retrieval_complete.zip
+- litmap_batch_B_final.zip
 - litmap_slim.egg-info/
   - PKG-INFO
   - SOURCES.txt
@@ -221,8 +220,8 @@ ERROR tests/test_store.py
 - app/config.py (709 bytes)
 - app/expand.py (1921 bytes)
 - app/graph.py (4091 bytes) [priority]
-- app/main.py (1621 bytes) [priority]
-- app/models.py (1327 bytes) [priority]
+- app/main.py (1873 bytes) [priority]
+- app/models.py (1971 bytes) [priority]
 - app/providers/base.py (219 bytes)
 - app/providers/crossref.py (1624 bytes)
 - app/providers/mock.py (9 bytes)
@@ -234,7 +233,7 @@ ERROR tests/test_store.py
 - app/store.py (1151 bytes) [priority]
 - app/templates/page.html (1375 bytes)
 - app/templates/partials/project_list.html (648 bytes)
-- app/templates/partials/workspace.html (534 bytes)
+- app/templates/partials/workspace.html (878 bytes)
 - app/templates/partials/workspace_bundle.html (136 bytes)
 - first_statup.txt (137 bytes)
 - litmap_slim.egg-info/SOURCES.txt (681 bytes)

@@ -1,22 +1,32 @@
 <div>
-<h3>Retrieval</h3>
+<h3>Retrieval / Expansion</h3>
 {% for r in retrieval_items %}
 <div>
 <strong>{{ r.title }}</strong>
 <p>PDF: {{ r.pdf_status }} | SI: {{ r.si_status }}</p>
 
-{% if r.doi %}
-<form hx-post="/projects/{{ project.project_id }}/retrieval/open">
-<input type="hidden" name="doi" value="{{ r.doi }}">
-<button>Open Paper</button>
-</form>
-{% endif %}
-
-<form hx-post="/projects/{{ project.project_id }}/retrieval/mark">
+<form hx-post="/projects/{{ project.project_id }}/upload_pdf" enctype="multipart/form-data">
 <input type="hidden" name="cid" value="{{ r.candidate_id }}">
-<button>Mark PDF Retrieved</button>
+<input type="file" name="file"><button>Upload PDF</button>
+</form>
+
+<form hx-post="/projects/{{ project.project_id }}/upload_si" enctype="multipart/form-data">
+<input type="hidden" name="cid" value="{{ r.candidate_id }}">
+<input type="file" name="file"><button>Upload SI</button>
 </form>
 
 </div>
 {% endfor %}
+
+<h3>Expansion Queue</h3>
+{% for e in project.expansion_candidates %}
+<div>
+{{ e.title }} <span>[{{ e.source_type }}]</span>
+</div>
+{% endfor %}
+
+<form hx-post="/projects/{{ project.project_id }}/export">
+<button>Export Project</button>
+</form>
+
 </div>

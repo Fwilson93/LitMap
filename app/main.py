@@ -1,53 +1,56 @@
-from fastapi import FastAPI, Form, Request
+from fastapi import FastAPI, Form, UploadFile, File
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from pathlib import Path
 from app.store import ProjectStore
 from app.config import get_settings
-from app.models import slugify_filename, RetrievalStatus
-import webbrowser
-from pathlib import Path
 
-settings = get_settings()
-store = ProjectStore(settings.projects_dir, settings.library_dir, settings.exports_dir)
-app = FastAPI()
+settings=get_settings()
+store=ProjectStore(settings.projects_dir,settings.library_dir,settings.exports_dir)
+app=FastAPI()
 
-templates = Jinja2Templates(directory="app/templates")
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
+templates=Jinja2Templates(directory="app/templates")
+app.mount("/static",StaticFiles(directory="app/static"),name="static")
 
-@app.post("/projects/{pid}/retrieval/auto")
-def retrieval_auto(pid:str):
-    p = store.get(pid)
-    lib = settings.library_dir
+@app.post("/projects/{pid}/upload_pdf")
+def upload_pdf(pid:str,cid:str=Form(...),file:UploadFile=File(...)):
+    p=store.get(pid); lib=settings.library_dir
+    c=p.get_candidate(cid)
+    path=lib/file.filename
+    with open(path,"wb") as f: f.write(file.file.read())
+    c.local_pdf_path=str(path); c.pdf_status="manual"
+    store.save(p); return "ok"
 
+@app.post("/projects/{pid}/upload_si")
+def upload_si(pid:str,cid:str=Form(...),file:UploadFile=File(...)):
+    p=store.get(pid); lib=settings.library_dir
+    c=p.get_candidate(cid)
+    path=lib/("SI_"+file.filename)
+    with open(path,"wb") as f: f.write(file.file.read())
+    c.local_si_path=str(path); c.si_status="manual"
+    store.save(p); return "ok"
+
+@app.post("/projects/{pid}/export")
+def export_project(pid:str):
+    p=store.get(pid); out=settings.exports_dir/p.project_id
+    out.mkdir(parents=True,exist_ok=True)
+    papers=out/"papers"; papers.mkdir(exist_ok=True)
+
+    import json
+
+    meta=[]
     for c in p.candidates:
-        if not c.doi or c.pdf_status != RetrievalStatus.MISSING:
-            continue
-        try:
-            filename = slugify_filename(c)
-            path = lib/filename
-            with open(path, "wb") as f:
-                f.write(b"
-")
-            c.pdf_status = RetrievalStatus.AUTO
-            c.local_pdf_path = str(path)
-        except:
-            c.pdf_status = RetrievalStatus.FAILED
+        if c.decision!="yes": continue
+        if c.local_pdf_path:
+            import shutil
+            shutil.copy(c.local_pdf_path,papers)
+        meta.append({
+            "title":c.title,
+            "doi":c.doi,
+            "pdf":c.local_pdf_path
+        })
 
-    store.save(p)
-    return "ok"
+    with open(out/"metadata.json","w") as f: json.dump(meta,f,indent=2)
 
-@app.post("/projects/{pid}/retrieval/open")
-def open_paper(pid:str, doi:str=Form(...)):
-    url = f"https://doi.org/{doi}"
-    webbrowser.open(url)
-    return "ok"
-
-@app.post("/projects/{pid}/retrieval/mark")
-def mark_manual(pid:str, cid:str=Form(...)):
-    p = store.get(pid)
-    for c in p.candidates:
-        if c.candidate_id == cid:
-            c.pdf_status = RetrievalStatus.MANUAL
-    store.save(p)
     return "ok"
