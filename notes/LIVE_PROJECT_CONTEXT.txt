@@ -1,5 +1,5 @@
 LIVE PROJECT CONTEXT
-Generated: 2026-07-01T14:03:49.996992+00:00
+Generated: 2026-07-01T14:07:53.396790+00:00
 Repository root: /Users/fwilson/Documents/Data/litmap_slim
 ===== PROJECT INTENT =====
 
@@ -130,196 +130,70 @@ uvicorn app.main:app --reload
 ===== GIT SNAPSHOT =====
 
 Branch: main
-Commit: 91082c8aaf16e5e78f38d73656c7b7188c286518
+Commit: 9eb72de8aad93bbdd6e5ede6069ce03f56a9452c
 
 Status:
-D .venv/lib/python3.9/site-packages/__pycache__/py.cpython-39.pyc
- M .venv/lib/python3.9/site-packages/__pycache__/typing_extensions.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/__pycache__/__init__.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/__pycache__/_argcomplete.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/__pycache__/_version.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/__pycache__/cacheprovider.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/__pycache__/capture.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/__pycache__/compat.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/__pycache__/debugging.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/__pycache__/deprecated.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/__pycache__/doctest.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/__pycache__/faulthandler.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/__pycache__/fixtures.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/__pycache__/freeze_support.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/__pycache__/helpconfig.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/__pycache__/hookspec.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/__pycache__/junitxml.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/__pycache__/legacypath.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/__pycache__/logging.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/__pycache__/main.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/__pycache__/monkeypatch.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/__pycache__/nodes.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/__pycache__/outcomes.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/__pycache__/pastebin.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/__pycache__/pathlib.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/__pycache__/pytester.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/__pycache__/python.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/__pycache__/python_api.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/__pycache__/raises.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/__pycache__/recwarn.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/__pycache__/reports.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/__pycache__/runner.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/__pycache__/scope.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/__pycache__/setuponly.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/__pycache__/setupplan.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/__pycache__/skipping.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/__pycache__/stash.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/__pycache__/stepwise.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/__pycache__/terminal.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/__pycache__/threadexception.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/__pycache__/timing.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/__pycache__/tmpdir.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/__pycache__/tracemalloc.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/__pycache__/unittest.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/__pycache__/unraisableexception.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/__pycache__/warning_types.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/__pycache__/warnings.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/_code/__pycache__/__init__.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/_code/__pycache__/code.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/_code/__pycache__/source.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/_io/__pycache__/__init__.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/_io/__pycache__/pprint.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/_io/__pycache__/saferepr.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/_io/__pycache__/terminalwriter.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/_io/__pycache__/wcwidth.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/_py/__pycache__/__init__.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/_py/__pycache__/error.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/_py/__pycache__/path.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/assertion/__pycache__/__init__.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/assertion/__pycache__/rewrite.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/assertion/__pycache__/truncate.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/assertion/__pycache__/util.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/config/__pycache__/__init__.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/config/__pycache__/argparsing.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/config/__pycache__/compat.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/config/__pycache__/exceptions.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/config/__pycache__/findpaths.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/mark/__pycache__/__init__.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/mark/__pycache__/expression.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/_pytest/mark/__pycache__/structures.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/anyio/__pycache__/__init__.cpython-39-pytest-8.4.2.pyc
- D .venv/lib/python3.9/site-packages/anyio/__pycache__/from_thread.cpython-39-pytest-8.4.2.pyc
- D .venv/lib/python3.9/site-packages/anyio/__pycache__/lowlevel.cpython-39-pytest-8.4.2.pyc
- D .venv/lib/python3.9/site-packages/anyio/__pycache__/pytest_plugin.cpython-39-pytest-8.4.2.pyc
- D .venv/lib/python3.9/site-packages/anyio/__pycache__/to_thread.cpython-39-pytest-8.4.2.pyc
- D .venv/lib/python3.9/site-packages/anyio/_backends/__pycache__/__init__.cpython-39-pytest-8.4.2.pyc
- D .venv/lib/python3.9/site-packages/anyio/_backends/__pycache__/_asyncio.cpython-39-pytest-8.4.2.pyc
- D .venv/lib/python3.9/site-packages/anyio/_backends/__pycache__/_trio.cpython-39-pytest-8.4.2.pyc
- D .venv/lib/python3.9/site-packages/anyio/_core/__pycache__/__init__.cpython-39-pytest-8.4.2.pyc
- D .venv/lib/python3.9/site-packages/anyio/_core/__pycache__/_contextmanagers.cpython-39-pytest-8.4.2.pyc
- D .venv/lib/python3.9/site-packages/anyio/_core/__pycache__/_eventloop.cpython-39-pytest-8.4.2.pyc
- D .venv/lib/python3.9/site-packages/anyio/_core/__pycache__/_exceptions.cpython-39-pytest-8.4.2.pyc
- D .venv/lib/python3.9/site-packages/anyio/_core/__pycache__/_fileio.cpython-39-pytest-8.4.2.pyc
- D .venv/lib/python3.9/site-packages/anyio/_core/__pycache__/_resources.cpython-39-pytest-8.4.2.pyc
- D .venv/lib/python3.9/site-packages/anyio/_core/__pycache__/_signals.cpython-39-pytest-8.4.2.pyc
- D .venv/lib/python3.9/site-packages/anyio/_core/__pycache__/_sockets.cpython-39-pytest-8.4.2.pyc
- D .venv/lib/python3.9/site-packages/anyio/_core/__pycache__/_streams.cpython-39-pytest-8.4.2.pyc
- D .venv/lib/python3.9/site-packages/anyio/_core/__pycache__/_subprocesses.cpython-39-pytest-8.4.2.pyc
- D .venv/lib/python3.9/site-packages/anyio/_core/__pycache__/_synchronization.cpython-39-pytest-8.4.2.pyc
- D .venv/lib/python3.9/site-packages/anyio/_core/__pycache__/_tasks.cpython-39-pytest-8.4.2.pyc
- D .venv/lib/python3.9/site-packages/anyio/_core/__pycache__/_tempfile.cpython-39-pytest-8.4.2.pyc
- D .venv/lib/python3.9/site-packages/anyio/_core/__pycache__/_testing.cpython-39-pytest-8.4.2.pyc
- D .venv/lib/python3.9/site-packages/anyio/_core/__pycache__/_typedattr.cpython-39-pytest-8.4.2.pyc
- D .venv/lib/python3.9/site-packages/anyio/abc/__pycache__/__init__.cpython-39-pytest-8.4.2.pyc
- D .venv/lib/python3.9/site-packages/anyio/abc/__pycache__/_eventloop.cpython-39-pytest-8.4.2.pyc
- D .venv/lib/python3.9/site-packages/anyio/abc/__pycache__/_resources.cpython-39-pytest-8.4.2.pyc
- D .venv/lib/python3.9/site-packages/anyio/abc/__pycache__/_sockets.cpython-39-pytest-8.4.2.pyc
- D .venv/lib/python3.9/site-packages/anyio/abc/__pycache__/_streams.cpython-39-pytest-8.4.2.pyc
- D .venv/lib/python3.9/site-packages/anyio/abc/__pycache__/_subprocesses.cpython-39-pytest-8.4.2.pyc
- D .venv/lib/python3.9/site-packages/anyio/abc/__pycache__/_tasks.cpython-39-pytest-8.4.2.pyc
- D .venv/lib/python3.9/site-packages/anyio/abc/__pycache__/_testing.cpython-39-pytest-8.4.2.pyc
- D .venv/lib/python3.9/site-packages/anyio/streams/__pycache__/__init__.cpython-39-pytest-8.4.2.pyc
- D .venv/lib/python3.9/site-packages/anyio/streams/__pycache__/memory.cpython-39-pytest-8.4.2.pyc
- D .venv/lib/python3.9/site-packages/anyio/streams/__pycache__/stapled.cpython-39-pytest-8.4.2.pyc
- D .venv/lib/python3.9/site-packages/anyio/streams/__pycache__/tls.cpython-39-pytest-8.4.2.pyc
- M .venv/lib/python3.9/site-packages/click/__pycache__/types.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/fastapi/__pycache__/testclient.cpython-39.pyc
- M .venv/lib/python3.9/site-packages/fastapi/__pycache__/utils.cpython-39.pyc
- M .venv/lib/python3.9/site-packages/fastapi/openapi/__pycache__/constants.cpython-39.pyc
- M .venv/lib/python3.9/site-packages/idna/__pycache__/core.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/iniconfig/__pycache__/__init__.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/iniconfig/__pycache__/_parse.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/iniconfig/__pycache__/exceptions.cpython-39.pyc
- M .venv/lib/python3.9/site-packages/jinja2/__pycache__/environment.cpython-39.pyc
- M .venv/lib/python3.9/site-packages/jinja2/__pycache__/filters.cpython-39.pyc
- M .venv/lib/python3.9/site-packages/jinja2/__pycache__/nodes.cpython-39.pyc
- M .venv/lib/python3.9/site-packages/jinja2/__pycache__/parser.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/pluggy/__pycache__/__init__.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/pluggy/__pycache__/_callers.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/pluggy/__pycache__/_hooks.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/pluggy/__pycache__/_manager.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/pluggy/__pycache__/_result.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/pluggy/__pycache__/_tracing.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/pluggy/__pycache__/_version.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/pluggy/__pycache__/_warnings.cpython-39.pyc
- M .venv/lib/python3.9/site-packages/pydantic/__pycache__/_migration.cpython-39.pyc
- M .venv/lib/python3.9/site-packages/pydantic/__pycache__/json_schema.cpython-39.pyc
- M .venv/lib/python3.9/site-packages/pydantic/__pycache__/version.cpython-39.pyc
- M .venv/lib/python3.9/site-packages/pydantic/_internal/__pycache__/_config.cpython-39.pyc
- M .venv/lib/python3.9/site-packages/pydantic/_internal/__pycache__/_core_utils.cpython-39.pyc
- M .venv/lib/python3.9/site-packages/pydantic/_internal/__pycache__/_decorators.cpython-39.pyc
- M .venv/lib/python3.9/site-packages/pydantic/_internal/__pycache__/_discriminated_union.cpython-39.pyc
- M .venv/lib/python3.9/site-packages/pydantic/_internal/__pycache__/_fields.cpython-39.pyc
- M .venv/lib/python3.9/site-packages/pydantic/_internal/__pycache__/_known_annotated_metadata.cpython-39.pyc
- M .venv/lib/python3.9/site-packages/pydantic/_internal/__pycache__/_schema_gather.cpython-39.pyc
- M .venv/lib/python3.9/site-packages/pydantic/v1/__pycache__/class_validators.cpython-39.pyc
- M .venv/lib/python3.9/site-packages/pydantic/v1/__pycache__/color.cpython-39.pyc
- M .venv/lib/python3.9/site-packages/pydantic/v1/__pycache__/main.cpython-39.pyc
- M .venv/lib/python3.9/site-packages/pydantic/v1/__pycache__/networks.cpython-39.pyc
- M .venv/lib/python3.9/site-packages/pydantic/v1/__pycache__/schema.cpython-39.pyc
- M .venv/lib/python3.9/site-packages/pydantic/v1/__pycache__/types.cpython-39.pyc
- M .venv/lib/python3.9/site-packages/pydantic/v1/__pycache__/utils.cpython-39.pyc
- M .venv/lib/python3.9/site-packages/pydantic/v1/__pycache__/validators.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/pygments/__pycache__/console.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/pygments/__pycache__/filter.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/pygments/__pycache__/formatter.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/pygments/__pycache__/lexer.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/pygments/__pycache__/regexopt.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/pygments/__pycache__/token.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/pygments/__pycache__/unistring.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/pygments/filters/__pycache__/__init__.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/pygments/formatters/__pycache__/__init__.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/pygments/formatters/__pycache__/_mapping.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/pygments/formatters/__pycache__/terminal.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/pygments/lexers/__pycache__/diff.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/pygments/lexers/__pycache__/python.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/pygments/styles/__pycache__/__init__.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/pygments/styles/__pycache__/_mapping.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/pytest/__pycache__/__init__.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/pytest/__pycache__/__main__.cpython-39.pyc
- M .venv/lib/python3.9/site-packages/starlette/__pycache__/requests.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/starlette/__pycache__/testclient.cpython-39.pyc
- M .venv/lib/python3.9/site-packages/starlette/__pycache__/websockets.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/tomli/__pycache__/__init__.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/tomli/__pycache__/_parser.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/tomli/__pycache__/_re.cpython-39.pyc
- M .venv/lib/python3.9/site-packages/typing_inspection/__pycache__/introspection.cpython-39.pyc
- M .venv/lib/python3.9/site-packages/uvicorn/middleware/__pycache__/proxy_headers.cpython-39.pyc
- M app/__pycache__/main.cpython-39.pyc
- M app/__pycache__/search.cpython-39.pyc
- M app/main.py
- M app/templates/partials/workspace.html
- M data/projects/test0.json
- D litmap_batch5_2.zip
- M scripts/__pycache__/_context_common.cpython-39.pyc
- D tests/__pycache__/conftest.cpython-39-pytest-8.4.2.pyc
- D tests/__pycache__/test_app.cpython-39-pytest-8.4.2.pyc
- D tests/__pycache__/test_store.cpython-39-pytest-8.4.2.pyc
- D tests/__pycache__/test_tools.cpython-39-pytest-8.4.2.pyc
-?? data/projects/test13.json
-?? litmap_batch5_3.zip
-?? litmap_batch5_4.zip
+M app/main.py
+?? app/expand.py
+?? litmap_batch6.zip
 
 ===== AUTOMATED CHECKS =====
 
-Return code: 0
-.......                                                                  [100%]
+Return code: 1
+.F.....                                                                  [100%]
+=================================== FAILURES ===================================
+________________________ test_create_project_and_search ________________________
+
+client = <starlette.testclient.TestClient object at 0x7fc7d0afdeb0>
+
+    def test_create_project_and_search(client):
+        client.post('/projects', data={'title': 'Test'})
+>       response = client.post('/projects/test/search', data={'query': 'iron', 'limit': 3})
+
+tests/test_app.py:10: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+.venv/lib/python3.9/site-packages/starlette/testclient.py:552: in post
+    return super().post(
+.venv/lib/python3.9/site-packages/httpx/_client.py:1144: in post
+    return self.request(
+.venv/lib/python3.9/site-packages/starlette/testclient.py:451: in request
+    return super().request(
+.venv/lib/python3.9/site-packages/httpx/_client.py:825: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+.venv/lib/python3.9/site-packages/httpx/_client.py:914: in send
+    response = self._send_handling_auth(
+.venv/lib/python3.9/site-packages/httpx/_client.py:942: in _send_handling_auth
+    response = self._send_handling_redirects(
+.venv/lib/python3.9/site-packages/httpx/_client.py:979: in _send_handling_redirects
+    response = self._send_single_request(request)
+.venv/lib/python3.9/site-packages/httpx/_client.py:1014: in _send_single_request
+    response = transport.handle_request(request)
+.venv/lib/python3.9/site-packages/starlette/testclient.py:354: in handle_request
+    raise exc
+.venv/lib/python3.9/site-packages/starlette/testclient.py:351: in handle_request
+    portal.call(self.app, scope, receive, send)
+.venv/lib/python3.9/site-packages/anyio/from_thread.py:334: in call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+../../../opt/anaconda3/lib/python3.9/concurrent/futures/_base.py:446: in result
+    return self.__get_result()
+../../../opt/anaconda3/lib/python3.9/concurrent/futures/_base.py:391: in __get_result
+    raise self._exception
+.venv/lib/python3.9/site-packages/anyio/from_thread.py:259: in _call_func
+    retval = await retval_or_awaitable
+.venv/lib/python3.9/site-packages/fastapi/applications.py:1138: in __call__
+    await super().__call__(scope, receive, send)
+.venv/lib/python3.9/site-packages/starlette/applications.py:113: in __call__
+    await self.middleware_stack(scope, receive, send)
+.venv/lib/python3.9/site-packages/starlette/middleware/errors.py:186: in __call__
+    raise exc
+.venv/lib/python3.9/site-packages/starlette/middleware/errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+.venv/lib/python3.9/site-packages/starlette/middleware/exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+.venv/lib/python3.9/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+.venv/lib/python3.9/site-p
+...[trimmed]
 
 ===== REPOSITORY TREE =====
 
@@ -327,6 +201,7 @@ Return code: 0
 - app/
   - __init__.py
   - config.py
+  - expand.py
   - graph.py
   - main.py
   - models.py
@@ -350,6 +225,7 @@ Return code: 0
 - first_statup.txt
 - litmap_batch5_3.zip
 - litmap_batch5_4.zip
+- litmap_batch6.zip
 - litmap_slim.egg-info/
   - PKG-INFO
   - SOURCES.txt
@@ -381,8 +257,9 @@ Return code: 0
 - README.md (1825 bytes) [priority]
 - app/__init__.py (0 bytes)
 - app/config.py (709 bytes)
+- app/expand.py (711 bytes)
 - app/graph.py (4091 bytes) [priority]
-- app/main.py (5162 bytes) [priority]
+- app/main.py (3380 bytes) [priority]
 - app/models.py (4507 bytes) [priority]
 - app/providers/base.py (219 bytes)
 - app/providers/crossref.py (1624 bytes)
