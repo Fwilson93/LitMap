@@ -1,5 +1,5 @@
 LIVE PROJECT CONTEXT
-Generated: 2026-07-01T15:36:15.272523+00:00
+Generated: 2026-07-01T18:16:50.158608+00:00
 Repository root: /Users/fwilson/Documents/Data/litmap_slim
 ===== PROJECT INTENT =====
 
@@ -130,20 +130,34 @@ uvicorn app.main:app --reload
 ===== GIT SNAPSHOT =====
 
 Branch: main
-Commit: 9ad629631c0374be6203f8032e1c873c2567957a
+Commit: 255cb5b615aff7229f04241a502a23292476c85a
 
 Status:
-M app/expand.py
- M app/main.py
+M app/main.py
  M app/models.py
- M app/providers/semantic_scholar.py
- D litmap_batch6_2_7_1.zip
-?? litmap_final_production_batch.zip
+ M app/store.py
+ M app/templates/partials/workspace.html
+ D litmap_final_production_batch.zip
+?? litmap_batch_A_retrieval_complete.zip
 
 ===== AUTOMATED CHECKS =====
 
-Return code: 0
-.......                                                                  [100%]
+Return code: 2
+==================================== ERRORS ====================================
+_____________________ ERROR collecting tests/test_store.py _____________________
+ImportError while importing test module '/Users/fwilson/Documents/Data/litmap_slim/tests/test_store.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../opt/anaconda3/lib/python3.9/importlib/__init__.py:127: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_store.py:6: in <module>
+    from app.store import ProjectStore
+app/store.py:2: in <module>
+    from app.models import Project, RetrievalItem
+E   ImportError: cannot import name 'Project' from 'app.models' (/Users/fwilson/Documents/Data/litmap_slim/app/models.py)
+=========================== short test summary info ============================
+ERROR tests/test_store.py
+!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
 
 ===== REPOSITORY TREE =====
 
@@ -173,7 +187,7 @@ Return code: 0
       - workspace.html
       - workspace_bundle.html
 - first_statup.txt
-- litmap_final_production_batch.zip
+- litmap_batch_A_retrieval_complete.zip
 - litmap_slim.egg-info/
   - PKG-INFO
   - SOURCES.txt
@@ -207,8 +221,8 @@ Return code: 0
 - app/config.py (709 bytes)
 - app/expand.py (1921 bytes)
 - app/graph.py (4091 bytes) [priority]
-- app/main.py (4710 bytes) [priority]
-- app/models.py (4569 bytes) [priority]
+- app/main.py (1621 bytes) [priority]
+- app/models.py (1327 bytes) [priority]
 - app/providers/base.py (219 bytes)
 - app/providers/crossref.py (1624 bytes)
 - app/providers/mock.py (9 bytes)
@@ -217,10 +231,10 @@ Return code: 0
 - app/search.py (4184 bytes) [priority]
 - app/static/app.css (5402 bytes)
 - app/static/app.js (180 bytes)
-- app/store.py (1435 bytes) [priority]
+- app/store.py (1151 bytes) [priority]
 - app/templates/page.html (1375 bytes)
 - app/templates/partials/project_list.html (648 bytes)
-- app/templates/partials/workspace.html (2582 bytes)
+- app/templates/partials/workspace.html (534 bytes)
 - app/templates/partials/workspace_bundle.html (136 bytes)
 - first_statup.txt (137 bytes)
 - litmap_slim.egg-info/SOURCES.txt (681 bytes)
