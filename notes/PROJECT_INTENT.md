@@ -1,25 +1,50 @@
 # Project intent
 
 ## Goal
-Keep LitMap Slim focused on one coherent local-first loop:
-1. search literature metadata;
-2. review candidates in a browser workspace;
-3. record yes / no / defer decisions;
-4. grow a lightweight literature graph from accepted items;
-5. track local PDF/supplement availability;
-6. export accepted literature into a LitCap-style handoff directory.
+
+Keep LitMap Slim focused on a local-first literature exploration loop:
+
+1. search literature metadata
+2. review candidates in a browser workspace
+3. record yes / no / defer decisions
+4. grow a controlled literature graph from accepted items
+5. expand the graph via:
+   - citations (forward and backward)
+   - author relationships
+   - related topics/papers
+6. manage an expansion queue where:
+   - candidates must be explicitly accepted
+   - ignored items may reappear
+   - blacklisted items never reappear
+7. retrieve PDFs and supplementary material
+8. track local file availability
+9. export accepted literature into a LitCap-style handoff directory
+
+## Key system distinctions
+
+### Search vs Expansion
+- search = user-initiated discovery
+- expansion = graph-driven candidate generation
+
+### Graph vs Queue
+- graph = accepted knowledge
+- expansion queue = potential additions requiring decision
+
+### Mapping vs Retrieval
+- mapping = intellectual structure of literature
+- retrieval = acquisition of documents and data
 
 ## Design principles
-- Keep the repo small enough to understand in one sitting.
-- Prefer one Python application over split frontend/backend toolchains.
-- Keep context-pack tooling lightweight and deterministic.
-- Keep runtime state on disk and easy to inspect.
-- Optimise for solo development with quick LLM handoff between chats.
 
-## Current stack
-- Python 3.11+
-- FastAPI
-- Jinja2
-- HTMX
-- Small server-rendered SVG graph
-- JSON file persistence under `data/`
+- keep repo small and understandable
+- single Python application
+- deterministic, local-first operation
+- explicit user control over ingestion
+- avoid hidden automation that alters the graph
+
+## Future direction
+
+- richer citation integration
+- improved PDF acquisition pipelines
+- better SI detection and classification
+- refined expansion ranking
