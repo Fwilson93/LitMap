@@ -22,7 +22,7 @@ app/static/app.js | size=180 bytes
 app/store.py | size=1435 bytes [priority]
 app/templates/page.html | size=1375 bytes
 app/templates/partials/project_list.html | size=648 bytes
-app/templates/partials/workspace.html | size=455 bytes
+app/templates/partials/workspace.html | size=2136 bytes
 app/templates/partials/workspace_bundle.html | size=136 bytes
 first_statup.txt | size=137 bytes
 litmap_slim.egg-info/SOURCES.txt | size=681 bytes
@@ -1163,21 +1163,77 @@ Size: 648 bytes
 ===== FILE: app/templates/partials/workspace.html =====
 
 Path: app/templates/partials/workspace.html
-Size: 455 bytes
+Size: 2136 bytes
 ```html
 {% if project %}
-  <section class="workspace-header card hero">
-    <div>
-      <p class="eyebrow">Active project</p>
-      <h2>{{ project.title }}</h2>
-      <p class="muted">{{ project.description or 'No description set.' }}</p>
+<section class="workspace-header card hero">
+  <div>
+    <p class="eyebrow">Active project</p>
+    <h2>{{ project.title }}</h2>
+    <p class="muted">{{ project.description or 'No description set.' }}</p>
+  </div>
+</section>
+
+<div class="workspace-grid">
+  <section class="card search-card">
+    <div class="section-heading">
+      <h3>Search</h3>
+      <span class="pill">live providers</span>
+    </div>
+
+    <form class="search-form" hx-post="/projects/{{ project.project_id }}/search" hx-target="#workspace" hx-swap="innerHTML">
+      <input type="text" name="query" placeholder="Search papers" required value="{{ project.search_query }}">
+      <input type="number" name="limit" value="8" min="1" max="20">
+      <button class="btn btn-primary" type="submit">Search</button>
+    </form>
+
+    {% if project.candidates %}
+      <div class="stack">
+        {% for c in project.candidates %}
+          <div class="candidate-row {% if selected_candidate and c.candidate_id == selected_candidate.candidate_id %}candidate-row--active{% endif %}">
+            <div>
+              <strong>{{ c.title }}</strong>
+              <p>{{ c.authors | join(', ') }}</p>
+              <small>{{ c.journal }} {{ c.year }}</small>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="muted">No candidates yet.</p>
+    {% endif %}
+  </section>
+
+  <section class="card">
+    <h3>Graph</h3>
+    <div class="graph-wrap">
+      {{ graph_svg | safe }}
     </div>
   </section>
-  <div class="workspace-grid">
-    <section class="card search-card">
-      <div class="section-heading"><h3>Search</h3><span class="pill">live providers</span></div>
 
-<!-- rest of file unchanged -->
+  <section class="card">
+    <h3>Retrieval</h3>
+    {% if retrieval_items %}
+      <div class="stack">
+        {% for r in retrieval_items %}
+          <div class="retrieval-row">
+            <strong>{{ r.title }}</strong>
+            <small>PDF missing: {{ r.pdf_missing }} | SI missing: {{ r.supplement_missing }}</small>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="muted">No retrieval items yet.</p>
+    {% endif %}
+  </section>
+</div>
+
+{% else %}
+<div class="empty-state card">
+  <h2>No project selected</h2>
+  <p>Create or select a project to begin.</p>
+</div>
+{% endif %}
 ```
 
 ===== FILE: app/templates/partials/workspace_bundle.html =====
