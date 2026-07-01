@@ -1,5 +1,5 @@
 LIVE PROJECT CONTEXT
-Generated: 2026-07-01T19:43:28.240870+00:00
+Generated: 2026-07-01T19:49:51.326614+00:00
 Repository root: /Users/fwilson/Documents/Data/litmap_slim
 ===== PROJECT INTENT =====
 
@@ -130,7 +130,7 @@ uvicorn app.main:app --reload
 ===== GIT SNAPSHOT =====
 
 Branch: main
-Commit: 482f5c11ed027c65d5376c0bbb63ae894dde2195
+Commit: 8395497a85f2fde363a86b3cf9216466868415d4
 
 Status:
 D .venv/lib/python3.9/site-packages/__pycache__/py.cpython-39.pyc
@@ -209,9 +209,7 @@ D .venv/lib/python3.9/site-packages/__pycache__/py.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/anyio/__pycache__/pytest_plugin.cpython-39-pytest-8.4.2.pyc
  D .venv/lib/python3.9/site-packages/anyio/__pycache__/to_thread.cpython-39-pytest-8.4.2.pyc
  D .venv/lib/python3.9/site-packages/anyio/_backends/__pycache__/__init__.cpython-39-pytest-8.4.2.pyc
- D .venv/lib/python3.9/site-packages/anyio/_backends/__pycache__/__init__.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/anyio/_backends/__pycache__/_asyncio.cpython-39-pytest-8.4.2.pyc
- D .venv/lib/python3.9/site-packages/anyio/_backends/__pycache__/_asyncio.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/anyio/_backends/__pycache__/_trio.cpython-39-pytest-8.4.2.pyc
  D .venv/lib/python3.9/site-packages/anyio/_core/__pycache__/__init__.cpython-39-pytest-8.4.2.pyc
  D .venv/lib/python3.9/site-packages/anyio/_core/__pycache__/_contextmanagers.cpython-39-pytest-8.4.2.pyc
@@ -240,43 +238,10 @@ D .venv/lib/python3.9/site-packages/__pycache__/py.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/anyio/streams/__pycache__/memory.cpython-39-pytest-8.4.2.pyc
  D .venv/lib/python3.9/site-packages/anyio/streams/__pycache__/stapled.cpython-39-pytest-8.4.2.pyc
  D .venv/lib/python3.9/site-packages/anyio/streams/__pycache__/tls.cpython-39-pytest-8.4.2.pyc
- D .venv/lib/python3.9/site-packages/certifi/__pycache__/__init__.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/certifi/__pycache__/core.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/click/__pycache__/types.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/fastapi/__pycache__/testclient.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/fastapi/__pycache__/utils.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/fastapi/openapi/__pycache__/constants.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/httpcore/__pycache__/__init__.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/httpcore/__pycache__/_api.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/httpcore/__pycache__/_exceptions.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/httpcore/__pycache__/_models.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/httpcore/__pycache__/_ssl.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/httpcore/__pycache__/_synchronization.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/httpcore/__pycache__/_trace.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/httpcore/__pycache__/_utils.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/httpcore/_async/__pycache__/__init__.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/httpcore/_async/__pycache__/connection.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/httpcore/_async/__pycache__/connection_pool.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/httpcore/_async/__pycache__/http11.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/httpcore/_async/__pycache__/http2.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/httpcore/_async/__pycache__/http_proxy.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/httpcore/_async/__pycache__/interfaces.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/httpcore/_async/__pycache__/socks_proxy.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/httpcore/_backends/__pycache__/__init__.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/httpcore/_backends/__pycache__/anyio.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/httpcore/_backends/__pycache__/auto.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/httpcore/_backends/__pycache__/base.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/httpcore/_backends/__pycache__/mock.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/httpcore/_backends/__pycache__/sync.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/httpcore/_backends/__pycache__/trio.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/httpcore/_sync/__pycache__/__init__.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/httpcore/_sync/__pycache__/connection.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/httpcore/_sync/__pycache__/connection_pool.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/httpcore/_sync/__pycache__/http11.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/httpcore/_sync/__pycache__/http2.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/httpcore/_sync/__pycache__/http_proxy.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/httpcore/_sync/__pycache__/interfaces.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/httpcore/_sync/__pycache__/socks_proxy.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/idna/__pycache__/core.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/iniconfig/__pycache__/__init__.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/iniconfig/__pycache__/_parse.cpython-39.pyc
@@ -306,10 +271,10 @@ D .venv/lib/python3.9/site-packages/__pycache__/py.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/pydantic/_internal/__pycache__/_known_annotated_metadata.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/pydantic/_internal/__pycache__/_schema_gather.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/pydantic/v1/__pycache__/class_validators.cpython-39.pyc
- M .venv/lib/python3.9/site-packages/pydantic/v1/__pycache__/color.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/pydantic/v1/__pycache__/main.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/pydantic/v1/__pycache__/networks.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/pydantic/v1/__pycache__/schema.cpython-39.pyc
+ M .venv/lib/python3.9/site-packages/pydantic/v1/__pycache__/types.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/pydantic/v1/__pycache__/utils.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/pydantic/v1/__pycache__/validators.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/pygments/__pycache__/console.cpython-39.pyc
@@ -337,106 +302,27 @@ D .venv/lib/python3.9/site-packages/__pycache__/py.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/tomli/__pycache__/_re.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/typing_inspection/__pycache__/introspection.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/uvicorn/middleware/__pycache__/proxy_headers.cpython-39.pyc
- M README_APPLY_ME.txt
- M app/__pycache__/expand.cpython-39.pyc
- M app/__pycache__/graph.cpython-39.pyc
  M app/__pycache__/main.cpython-39.pyc
  M app/__pycache__/search.cpython-39.pyc
- M app/__pycache__/store.cpython-39.pyc
- M app/expand.py
- M app/graph.py
  M app/main.py
- M app/static/app.css
- M app/store.py
- M app/templates/page.html
- M app/templates/partials/project_list.html
- M app/templates/partials/workspace.html
+ M data/projects/test13.json
  M scripts/__pycache__/_context_common.cpython-39.pyc
  D tests/__pycache__/conftest.cpython-39-pytest-8.4.2.pyc
  D tests/__pycache__/test_app.cpython-39-pytest-8.4.2.pyc
  D tests/__pycache__/test_store.cpython-39-pytest-8.4.2.pyc
  D tests/__pycache__/test_tools.cpython-39-pytest-8.4.2.pyc
-?? litmap_slim_layout_and_fix_bundle.zip
+?? .venv/lib/python3.9/site-packages/anyio/_backends/__pycache__/__init__.cpython-39.pyc
+?? .venv/lib/python3.9/site-packages/anyio/_backends/__pycache__/_asyncio.cpython-39.pyc
+?? .venv/lib/python3.9/site-packages/certifi/__pycache__/
+?? .venv/lib/python3.9/site-packages/httpcore/__pycache__/
+?? .venv/lib/python3.9/site-packages/httpcore/_async/__pycache__/
+?? .venv/lib/python3.9/site-packages/httpcore/_backends/__pycache__/
+?? .venv/lib/python3.9/site-packages/httpcore/_sync/__pycache__/
 
 ===== AUTOMATED CHECKS =====
 
-Return code: 1
-EE.....                                                                  [100%]
-==================================== ERRORS ====================================
-______________________ ERROR at setup of test_index_loads ______________________
-
-tmp_path = PosixPath('/private/var/folders/0c/744fr1ys6s5_l2rtcdlvzpfw0000gn/T/pytest-of-fwilson/pytest-35/test_index_loads0')
-monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7fca78070b50>
-
-    @pytest.fixture()
-    def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> TestClient:
-        monkeypatch.setenv('LITMAP_DATA_DIR', str(tmp_path / 'data'))
-        monkeypatch.setenv('LITMAP_CONTEXT_SKIP_TESTS', '1')
-        import app.config
->       import app.main
-
-tests/conftest.py:15: 
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
-
-    from pathlib import Path
-    
-    from fastapi import FastAPI, File, Form, Request, UploadFile
-    from fastapi.responses import HTMLResponse
-    from fastapi.staticfiles import StaticFiles
-    from fastapi.templating import Jinja2Templates
-    
-    from app.config import get_settings
-    from app.expand import expand_from_candidate
-    from app.graph import render_graph_svg, update_graph_for_candidate
-    from app.models import Decision
-    from app.search import run_search
-    from app.store import ProjectStore
-    
-    settings = get_settings()
-    store = ProjectStore(settings.projects_dir, settings.library_dir, settings.exports_dir)
-    
-    app = FastAPI()
-    templates = Jinja2Templates(directory="app/templates")
-    app.mount("/static", StaticFiles(directory="app/static"), name="static")
-    
-    FIXED_SEARCH_LIMIT = 8
-    
-    
-    def _resolve_selected_candidate(project, selected_candidate_id: str = ""):
-        if not project or not project.candidates:
-            return None
-        if selected_candidate_id:
-            try:
-                return project.get_candidate(selected_candidate_id)
-            except KeyError:
-                pass
-        return project.candidates[0]
-    
-    
-    def _merge_expansion_candidates(project, incoming) -> None:
-        accepted_ids = {candidate.candidate_id for candidate in project.candidates}
-        seen = {candidate.candidate_id for candidate in project.expansion_candidates}
-        for item in incoming:
-            raw_candidate_id = item.candidate_id.removeprefix("exp-")
-            if item.candidate_id in project.blacklist or raw_candidate_id in project.blacklist:
-                continue
-            if raw_candidate_id in accepted_ids or item.candidate_id in accepted_ids:
-                continue
-            if item.candidate_id in seen:
-                continue
-            project.expansion_candidates.append(item)
-            seen.add(item.candidate_id)
-    
-    
-    def _workspace_context(
-        project=None,
-        *,
-        query: str = "",
-        search_error: str = "",
-        selected_candidate_id: str = "",
-    ):
-        projects = store.list_projects()
-...[trimmed]
+Return code: 0
+.......                                                                  [100%]
 
 ===== REPOSITORY TREE =====
 
@@ -505,7 +391,7 @@ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 - app/config.py (709 bytes)
 - app/expand.py (2275 bytes)
 - app/graph.py (5674 bytes) [priority]
-- app/main.py (8814 bytes) [priority]
+- app/main.py (9248 bytes) [priority]
 - app/models.py (3996 bytes) [priority]
 - app/providers/base.py (219 bytes)
 - app/providers/crossref.py (1624 bytes)

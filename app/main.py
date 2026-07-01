@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Optional
 
 from fastapi import FastAPI, File, Form, Request, UploadFile
 from fastapi.responses import HTMLResponse
@@ -64,13 +65,21 @@ def _workspace_context(
             selected_candidate.candidate_id if selected_candidate else None,
             project.project_id,
         )
+
     accepted_count = 0
     deferred_count = 0
     rejected_count = 0
     if project:
-        accepted_count = sum(1 for candidate in project.candidates if candidate.decision == Decision.YES)
-        deferred_count = sum(1 for candidate in project.candidates if candidate.decision == Decision.DEFER)
-        rejected_count = sum(1 for candidate in project.candidates if candidate.decision == Decision.NO)
+        accepted_count = sum(
+            1 for candidate in project.candidates if candidate.decision == Decision.YES
+        )
+        deferred_count = sum(
+            1 for candidate in project.candidates if candidate.decision == Decision.DEFER
+        )
+        rejected_count = sum(
+            1 for candidate in project.candidates if candidate.decision == Decision.NO
+        )
+
     return {
         "app_name": settings.app_name,
         "projects": projects,
@@ -98,11 +107,19 @@ def index(request: Request):
 
 
 @app.post("/projects", response_class=HTMLResponse)
-def create_project(request: Request, title: str = Form(...), description: str = Form("")):
+def create_project(
+    request: Request,
+    title: str = Form(...),
+    description: str = Form(""),
+):
     project = store.create_project(title, description)
     context = _workspace_context(project)
     context["request"] = request
-    return templates.TemplateResponse(request=request, name="partials/workspace_bundle.html", context=context)
+    return templates.TemplateResponse(
+        request=request,
+        name="partials/workspace_bundle.html",
+        context=context,
+    )
 
 
 @app.post("/projects/{pid}/delete", response_class=HTMLResponse)
@@ -112,7 +129,11 @@ def delete_project(request: Request, pid: str):
     project = projects[0] if projects else None
     context = _workspace_context(project)
     context["request"] = request
-    return templates.TemplateResponse(request=request, name="partials/workspace_bundle.html", context=context)
+    return templates.TemplateResponse(
+        request=request,
+        name="partials/workspace_bundle.html",
+        context=context,
+    )
 
 
 @app.get("/projects/{pid}/workspace", response_class=HTMLResponse)
@@ -120,7 +141,11 @@ def project_workspace(request: Request, pid: str, selected: str = ""):
     project = store.get(pid)
     context = _workspace_context(project, selected_candidate_id=selected)
     context["request"] = request
-    return templates.TemplateResponse(request=request, name="partials/workspace_bundle.html", context=context)
+    return templates.TemplateResponse(
+        request=request,
+        name="partials/workspace_bundle.html",
+        context=context,
+    )
 
 
 @app.post("/projects/{pid}/search", response_class=HTMLResponse)
@@ -128,23 +153,31 @@ def search_project(
     request: Request,
     pid: str,
     query: str = Form(...),
-    limit: int | None = Form(default=None),
+    limit: Optional[int] = Form(default=None),
 ):
     project = store.get(pid)
     search_error = ""
     effective_limit = FIXED_SEARCH_LIMIT
+
     if limit is not None:
         try:
-            effective_limit = FIXED_SEARCH_LIMIT if int(limit) <= 0 else min(int(limit), FIXED_SEARCH_LIMIT)
+            effective_limit = (
+                FIXED_SEARCH_LIMIT
+                if int(limit) <= 0
+                else min(int(limit), FIXED_SEARCH_LIMIT)
+            )
         except Exception:
             effective_limit = FIXED_SEARCH_LIMIT
+
     try:
         results = run_search(query, limit=effective_limit)
     except Exception as exc:
         results = []
         search_error = f"Search failed: {exc}"
+
     project.upsert_candidates(results, query=query)
     store.save(project)
+
     selected_candidate_id = results[0].candidate_id if results else ""
     context = _workspace_context(
         project,
@@ -153,7 +186,11 @@ def search_project(
         selected_candidate_id=selected_candidate_id,
     )
     context["request"] = request
-    return templates.TemplateResponse(request=request, name="partials/workspace_bundle.html", context=context)
+    return templates.TemplateResponse(
+        request=request,
+        name="partials/workspace_bundle.html",
+        context=context,
+    )
 
 
 @app.post("/projects/{pid}/candidates/{cid}/decision", response_class=HTMLResponse)
@@ -167,6 +204,7 @@ def decide_candidate(
     project = store.get(pid)
     candidate = project.set_decision(cid, Decision(decision))
     search_error = ""
+
     if candidate.decision == Decision.YES:
         update_graph_for_candidate(project, candidate)
         try:
@@ -174,13 +212,16 @@ def decide_candidate(
         except Exception as exc:
             expanded = []
             search_error = f"Expansion warning: {exc}"
+
         _merge_expansion_candidates(project, expanded)
         project.expansion_candidates = [
             item
             for item in project.expansion_candidates
             if item.candidate_id not in {cid, f"exp-{cid}"}
         ]
+
     store.save(project)
+
     context = _workspace_context(
         project,
         query=query,
@@ -188,7 +229,11 @@ def decide_candidate(
         selected_candidate_id=cid,
     )
     context["request"] = request
-    return templates.TemplateResponse(request=request, name="partials/workspace_bundle.html", context=context)
+    return templates.TemplateResponse(
+        request=request,
+        name="partials/workspace_bundle.html",
+        context=context,
+    )
 
 
 @app.post("/projects/{pid}/upload_pdf")
@@ -197,8 +242,10 @@ def upload_pdf(pid: str, cid: str = Form(...), file: UploadFile = File(...)):
     library_dir = settings.library_dir
     candidate = project.get_candidate(cid)
     path = library_dir / Path(file.filename).name
+
     with open(path, "wb") as handle:
         handle.write(file.file.read())
+
     candidate.local_pdf_path = str(path)
     candidate.pdf_status = "manual"
     store.save(project)
@@ -211,8 +258,10 @@ def upload_si(pid: str, cid: str = Form(...), file: UploadFile = File(...)):
     library_dir = settings.library_dir
     candidate = project.get_candidate(cid)
     path = library_dir / f"SI_{Path(file.filename).name}"
+
     with open(path, "wb") as handle:
         handle.write(file.file.read())
+
     candidate.local_si_path = str(path)
     candidate.si_status = "manual"
     store.save(project)
@@ -224,8 +273,10 @@ def export_project(pid: str):
     project = store.get(pid)
     output_dir = settings.exports_dir / project.project_id
     output_dir.mkdir(parents=True, exist_ok=True)
+
     papers_dir = output_dir / "papers"
     papers_dir.mkdir(exist_ok=True)
+
     import json
     import shutil
 
@@ -235,7 +286,15 @@ def export_project(pid: str):
             continue
         if candidate.local_pdf_path:
             shutil.copy(candidate.local_pdf_path, papers_dir)
-        metadata.append({"title": candidate.title, "doi": candidate.doi, "pdf": candidate.local_pdf_path})
+        metadata.append(
+            {
+                "title": candidate.title,
+                "doi": candidate.doi,
+                "pdf": candidate.local_pdf_path,
+            }
+        )
+
     with open(output_dir / "metadata.json", "w") as handle:
         json.dump(metadata, handle, indent=2)
+
     return "ok"
