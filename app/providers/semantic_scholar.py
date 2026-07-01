@@ -14,18 +14,18 @@ class SemanticScholarProvider:
             "fields": "title,authors,year,venue,abstract,externalIds"
         }
 
-        for attempt in range(3):
+        for attempt in range(2):
             try:
-                r = httpx.get(API_URL, params=params, timeout=10)
+                r = httpx.get(API_URL, params=params, timeout=4)
                 if r.status_code == 429:
-                    time.sleep(1.5 * (attempt + 1))
+                    time.sleep(1.0)
                     continue
                 r.raise_for_status()
                 break
             except Exception:
-                if attempt == 2:
+                if attempt == 1:
                     return []
-                time.sleep(1.0 * (attempt + 1))
+                time.sleep(0.5)
 
         data = r.json()
         results = []

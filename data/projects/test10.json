@@ -1,0 +1,344 @@
+{
+  "project_id": "test10",
+  "title": "test10",
+  "description": "",
+  "search_query": "stixrude 2012 hcp iron",
+  "created_at": "2026-07-01T12:54:24.642025Z",
+  "updated_at": "2026-07-01T12:56:15.494093Z",
+  "candidates": [
+    {
+      "candidate_id": "260a9a10c8f5",
+      "title": "First principles investigation of bcc, fcc, and hcp phases of iron",
+      "authors": [
+        "Lars Stixrude",
+        "R. E. Cohen"
+      ],
+      "journal": "AIP Conference Proceedings",
+      "year": 1994,
+      "doi": "10.1063/1.46182",
+      "abstract": "",
+      "reasons": [],
+      "keywords": [],
+      "decision": "yes",
+      "notes": "",
+      "local_pdf_present": false,
+      "local_pdf_path": null,
+      "local_supplement_present": false,
+      "local_supplement_path": null
+    },
+    {
+      "candidate_id": "ac27564e82f5",
+      "title": "Stability of the hcp phase and temperature variation of the axial ratio of iron near Earth-core conditions",
+      "authors": [
+        "P Modak",
+        "A K Verma",
+        "R S Rao",
+        "B K Godwal",
+        "L Stixrude",
+        "R Jeanloz"
+      ],
+      "journal": "Journal of Physics: Condensed Matter",
+      "year": 2007,
+      "doi": "10.1088/0953-8984/19/1/016208",
+      "abstract": "",
+      "reasons": [],
+      "keywords": [],
+      "decision": "unreviewed",
+      "notes": "",
+      "local_pdf_present": false,
+      "local_pdf_path": null,
+      "local_supplement_present": false,
+      "local_supplement_path": null
+    },
+    {
+      "candidate_id": "4fc46db9965a",
+      "title": "Mantle Water–Iron Coevolution",
+      "authors": [
+        "Junjie Dong",
+        "Lars Stixrude",
+        "Paul Asimow"
+      ],
+      "journal": "Goldschmidt2024 abstracts",
+      "year": 2024,
+      "doi": "10.46427/gold2024.23711",
+      "abstract": "",
+      "reasons": [],
+      "keywords": [],
+      "decision": "unreviewed",
+      "notes": "",
+      "local_pdf_present": false,
+      "local_pdf_path": null,
+      "local_supplement_present": false,
+      "local_supplement_path": null
+    },
+    {
+      "candidate_id": "078cb971e1d0",
+      "title": "COEVOLUTION OF IRON AND WATER IN THE EARTH'S MANTLE",
+      "authors": [
+        "Junjie Dong",
+        "Lars Stixrude",
+        "Lars Stixrude",
+        "Paul D. Asimow",
+        "Paul D. Asimow"
+      ],
+      "journal": "Geological Society of America Abstracts with Programs",
+      "year": 2024,
+      "doi": "10.1130/abs/2024am-402565",
+      "abstract": "",
+      "reasons": [],
+      "keywords": [],
+      "decision": "unreviewed",
+      "notes": "",
+      "local_pdf_present": false,
+      "local_pdf_path": null,
+      "local_supplement_present": false,
+      "local_supplement_path": null
+    },
+    {
+      "candidate_id": "6c208a4e94ce",
+      "title": "First-principles elastic constants for the hcp transition metals Fe, Co, and Re at high pressure",
+      "authors": [
+        "Gerd Steinle-Neumann",
+        "Lars Stixrude",
+        "Ronald E. Cohen"
+      ],
+      "journal": "Physical Review B",
+      "year": 1999,
+      "doi": "10.1103/physrevb.60.791",
+      "abstract": "",
+      "reasons": [],
+      "keywords": [],
+      "decision": "unreviewed",
+      "notes": "",
+      "local_pdf_present": false,
+      "local_pdf_path": null,
+      "local_supplement_present": false,
+      "local_supplement_path": null
+    },
+    {
+      "candidate_id": "2cfe65bb7e52",
+      "title": "Erratum: First-principles elastic constants for the hcp transition metals Fe, Co, and Re at high pressure [Phys. Rev. B<b>60</b>, 791 (1999)]",
+      "authors": [
+        "Gerd Steinle-Neumann",
+        "Lars Stixrude",
+        "Ronald E. Cohen"
+      ],
+      "journal": "Physical Review B",
+      "year": 2004,
+      "doi": "10.1103/physrevb.69.219903",
+      "abstract": "",
+      "reasons": [],
+      "keywords": [],
+      "decision": "unreviewed",
+      "notes": "",
+      "local_pdf_present": false,
+      "local_pdf_path": null,
+      "local_supplement_present": false,
+      "local_supplement_path": null
+    },
+    {
+      "candidate_id": "99f82352edda",
+      "title": "Antiferromagnetism in hcp Iron-Ruthenium and hcp Iron-Osmium Alloys",
+      "authors": [
+        "Hideo Ohno"
+      ],
+      "journal": "Journal of the Physical Society of Japan",
+      "year": 1971,
+      "doi": "10.1143/jpsj.31.92",
+      "abstract": "",
+      "reasons": [],
+      "keywords": [],
+      "decision": "unreviewed",
+      "notes": "",
+      "local_pdf_present": false,
+      "local_pdf_path": null,
+      "local_supplement_present": false,
+      "local_supplement_path": null
+    },
+    {
+      "candidate_id": "f870dcc7e277",
+      "title": "HCP Martensite in Iron Alloys",
+      "authors": [
+        "Zenji NISHIYAMA"
+      ],
+      "journal": "Tetsu-to-Hagane",
+      "year": 1969,
+      "doi": "10.2355/tetsutohagane1955.55.12_1041",
+      "abstract": "",
+      "reasons": [],
+      "keywords": [],
+      "decision": "unreviewed",
+      "notes": "",
+      "local_pdf_present": false,
+      "local_pdf_path": null,
+      "local_supplement_present": false,
+      "local_supplement_path": null
+    }
+  ],
+  "graph": {
+    "nodes": [
+      {
+        "node_id": "paper:e765e8817982",
+        "node_type": "paper",
+        "label": "Internally consistent thermodynamic database for iron to the Earth's core conditions"
+      },
+      {
+        "node_id": "author:tetsuya komabayashi",
+        "node_type": "author",
+        "label": "Tetsuya Komabayashi"
+      },
+      {
+        "node_id": "author:yingwei fei",
+        "node_type": "author",
+        "label": "Yingwei Fei"
+      },
+      {
+        "node_id": "paper:894254a488f7",
+        "node_type": "paper",
+        "label": "The fate of banded iron formations in the deep mantle: Iron oxide reduction kinetics at high temperatures and pressures"
+      },
+      {
+        "node_id": "author:jemila edmond",
+        "node_type": "author",
+        "label": "Jemila Edmond"
+      },
+      {
+        "node_id": "author:james van orman",
+        "node_type": "author",
+        "label": "James Van Orman"
+      },
+      {
+        "node_id": "paper:b5ca4592a85f",
+        "node_type": "paper",
+        "label": "Entropy, dynamics, and freezing of CaSiO3 liquid"
+      },
+      {
+        "node_id": "author:alfred wilson",
+        "node_type": "author",
+        "label": "Alfred Wilson"
+      },
+      {
+        "node_id": "author:lars stixrude",
+        "node_type": "author",
+        "label": "Lars Stixrude"
+      },
+      {
+        "node_id": "paper:260a9a10c8f5",
+        "node_type": "paper",
+        "label": "First principles investigation of bcc, fcc, and hcp phases of iron"
+      },
+      {
+        "node_id": "author:r. e. cohen",
+        "node_type": "author",
+        "label": "R. E. Cohen"
+      }
+    ],
+    "edges": [
+      {
+        "edge_id": "edge:paper:e765e8817982:author:tetsuya komabayashi",
+        "edge_type": "paper_author",
+        "source": "paper:e765e8817982",
+        "target": "author:tetsuya komabayashi",
+        "label": "author"
+      },
+      {
+        "edge_id": "edge:paper:e765e8817982:author:yingwei fei",
+        "edge_type": "paper_author",
+        "source": "paper:e765e8817982",
+        "target": "author:yingwei fei",
+        "label": "author"
+      },
+      {
+        "edge_id": "edge:paper:894254a488f7:author:jemila edmond",
+        "edge_type": "paper_author",
+        "source": "paper:894254a488f7",
+        "target": "author:jemila edmond",
+        "label": "author"
+      },
+      {
+        "edge_id": "edge:paper:894254a488f7:author:james van orman",
+        "edge_type": "paper_author",
+        "source": "paper:894254a488f7",
+        "target": "author:james van orman",
+        "label": "author"
+      },
+      {
+        "edge_id": "edge:paper:b5ca4592a85f:author:alfred wilson",
+        "edge_type": "paper_author",
+        "source": "paper:b5ca4592a85f",
+        "target": "author:alfred wilson",
+        "label": "author"
+      },
+      {
+        "edge_id": "edge:paper:b5ca4592a85f:author:lars stixrude",
+        "edge_type": "paper_author",
+        "source": "paper:b5ca4592a85f",
+        "target": "author:lars stixrude",
+        "label": "author"
+      },
+      {
+        "edge_id": "edge:paper:260a9a10c8f5:author:lars stixrude",
+        "edge_type": "paper_author",
+        "source": "paper:260a9a10c8f5",
+        "target": "author:lars stixrude",
+        "label": "author"
+      },
+      {
+        "edge_id": "edge:paper:260a9a10c8f5:author:r. e. cohen",
+        "edge_type": "paper_author",
+        "source": "paper:260a9a10c8f5",
+        "target": "author:r. e. cohen",
+        "label": "author"
+      }
+    ]
+  },
+  "timeline": [
+    {
+      "event_id": "evt_eedbb8fb6f",
+      "event_type": "candidate_decision",
+      "timestamp": "2026-07-01T12:56:15.493998Z",
+      "message": "Marked 'First principles investigation of bcc, fcc, and hcp phases of iron' as yes.",
+      "payload": {
+        "candidate_id": "260a9a10c8f5",
+        "decision": "yes"
+      }
+    },
+    {
+      "event_id": "evt_be4e8528af",
+      "event_type": "candidate_decision",
+      "timestamp": "2026-07-01T12:55:52.039988Z",
+      "message": "Marked 'Entropy, dynamics, and freezing of CaSiO3 liquid' as yes.",
+      "payload": {
+        "candidate_id": "b5ca4592a85f",
+        "decision": "yes"
+      }
+    },
+    {
+      "event_id": "evt_baba70b376",
+      "event_type": "candidate_decision",
+      "timestamp": "2026-07-01T12:55:25.831054Z",
+      "message": "Marked 'The fate of banded iron formations in the deep mantle: Iron oxide reduction kinetics at high temperatures and pressures' as yes.",
+      "payload": {
+        "candidate_id": "894254a488f7",
+        "decision": "yes"
+      }
+    },
+    {
+      "event_id": "evt_558bd74b8d",
+      "event_type": "candidate_decision",
+      "timestamp": "2026-07-01T12:54:54.391085Z",
+      "message": "Marked 'Internally consistent thermodynamic database for iron to the Earth's core conditions' as yes.",
+      "payload": {
+        "candidate_id": "e765e8817982",
+        "decision": "yes"
+      }
+    },
+    {
+      "event_id": "evt_b0557a049a",
+      "event_type": "project_created",
+      "timestamp": "2026-07-01T12:54:24.642074Z",
+      "message": "Created project 'test10'.",
+      "payload": {}
+    }
+  ]
+}

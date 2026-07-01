@@ -12,18 +12,19 @@ class OpenAlexProvider:
             "per_page": limit
         }
 
-        for attempt in range(3):
+        for attempt in range(2):
             try:
-                r = httpx.get(BASE_URL, params=params, timeout=10)
-                if r.status_code == 429:
-                    time.sleep(1.5 * (attempt + 1))
+                r = httpx.get(BASE_URL, params=params, timeout=4)
+                if r.status_code == 429 or r.status_code == 503:
+                    time.sleep(1.0)
                     continue
                 r.raise_for_status()
                 break
-            except Exception:
-                if attempt == 2:
+            except Exception as e:
+                if attempt == 1:
+                    print(f">>> OpenAlex failed: {e}")
                     return []
-                time.sleep(1.0 * (attempt + 1))
+                time.sleep(0.5)
 
         data = r.json()
         results = []
@@ -35,12 +36,6 @@ class OpenAlexProvider:
             journal = item.get("host_venue", {}).get("display_name", "")
             year = item.get("publication_year")
 
-            abstract = item.get("abstract_inverted_index")
-            abstract_text = ""
-            if isinstance(abstract, dict):
-                words = sorted(((pos, word) for word, positions in abstract.items() for pos in positions))
-                abstract_text = " ".join(word for _, word in words)
-
             identity = doi or item.get("id") or title
             cid = sha1(identity.encode("utf-8")).hexdigest()[:12]
 
@@ -51,7 +46,7 @@ class OpenAlexProvider:
                 journal=journal,
                 year=year,
                 doi=doi,
-                abstract=abstract_text,
+                abstract="",
                 reasons=[],
                 keywords=[]
             ))
