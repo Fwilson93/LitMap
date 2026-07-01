@@ -6,25 +6,25 @@ Max file bytes: 80000
 ===== FILE MANIFEST =====
 
 README.md | size=1825 bytes [priority]
-README_APPLY_ME.txt | size=876 bytes
+README_APPLY_ME.txt | size=870 bytes
 app/__init__.py | size=0 bytes
 app/config.py | size=709 bytes
 app/expand.py | size=2275 bytes
-app/graph.py | size=5674 bytes [priority]
-app/main.py | size=9248 bytes [priority]
-app/models.py | size=3996 bytes [priority]
+app/graph.py | size=5953 bytes [priority]
+app/main.py | size=11628 bytes [priority]
+app/models.py | size=4837 bytes [priority]
 app/providers/base.py | size=219 bytes
 app/providers/crossref.py | size=1624 bytes
 app/providers/mock.py | size=9 bytes
 app/providers/openalex.py | size=1637 bytes
 app/providers/semantic_scholar.py | size=1008 bytes
 app/search.py | size=4535 bytes [priority]
-app/static/app.css | size=7782 bytes
-app/static/app.js | size=180 bytes
+app/static/app.css | size=7969 bytes
+app/static/app.js | size=391 bytes
 app/store.py | size=1872 bytes [priority]
 app/templates/page.html | size=1474 bytes
 app/templates/partials/project_list.html | size=1133 bytes
-app/templates/partials/workspace.html | size=8205 bytes
+app/templates/partials/workspace.html | size=11422 bytes
 app/templates/partials/workspace_bundle.html | size=136 bytes
 first_statup.txt | size=137 bytes
 litmap_slim.egg-info/SOURCES.txt | size=681 bytes
@@ -129,28 +129,25 @@ uvicorn app.main:app --reload
 ===== FILE: README_APPLY_ME.txt =====
 
 Path: README_APPLY_ME.txt
-Size: 876 bytes
+Size: 870 bytes
 ```txt
-LitMap Slim layout + stability bundle
+LitMap Slim speed + tabbed rails bundle
 
 Included replacement files:
-- app/expand.py
 - app/graph.py
 - app/main.py
+- app/models.py
 - app/static/app.css
-- app/store.py
-- app/templates/page.html
-- app/templates/partials/project_list.html
+- app/static/app.js
 - app/templates/partials/workspace.html
 
 What this changes:
-- fixes the expansion crash caused by Semantic Scholar sections returning null
-- gives the map the centre half of the view with a larger canvas
-- keeps projects and new-project controls collapsible on the left rail
-- adds delete buttons for existing projects
-- moves search + expandable review cards to the right rail
-- fixes the search UI to a fixed top-8 result loop
-- makes paper nodes and graph links clickable entry points into review
+- removes the forced smooth-scroll after every HTMX swap
+- separates search, PDF ingress/retrieval, and expansion queue into tabs on the right rail
+- removes extra functionality panels from below the search results and below the map
+- adds a dedicated "Scan map for expansion suggestions" action
+- makes Accept/Reject/Defer faster by no longer running expansion automatically during node add
+- limits review to the current visible search result set while keeping cached candidates in the project
 
 Apply by copying these files into the repository root, preserving paths.
 
@@ -282,7 +279,7 @@ def expand_from_candidate(candidate: Candidate, limit: int = 8):
 ===== FILE: app/graph.py =====
 
 Path: app/graph.py
-Size: 5674 bytes
+Size: 5953 bytes
 ```py
 from __future__ import annotations
 
@@ -309,23 +306,16 @@ def topic_node_id(topic: str) -> str:
 def update_graph_for_candidate(project: Project, candidate: Candidate) -> None:
     if candidate.decision != candidate.decision.YES:
         return
-
     node_ids = {node.node_id for node in project.graph.nodes}
     edge_ids = {edge.edge_id for edge in project.graph.edges}
     paper_id = paper_node_id(candidate.candidate_id)
-
     if paper_id not in node_ids:
-        project.graph.nodes.append(
-            GraphNode(node_id=paper_id, node_type=NodeType.PAPER, label=candidate.title)
-        )
+        project.graph.nodes.append(GraphNode(node_id=paper_id, node_type=NodeType.PAPER, label=candidate.title))
         node_ids.add(paper_id)
-
     for author in candidate.authors[:4]:
         aid = author_node_id(author)
         if aid not in node_ids:
-            project.graph.nodes.append(
-                GraphNode(node_id=aid, node_type=NodeType.AUTHOR, label=author)
-            )
+            project.graph.nodes.append(GraphNode(node_id=aid, node_type=NodeType.AUTHOR, label=author))
             node_ids.add(aid)
         eid = f"edge:{paper_id}:{aid}"
         if eid not in edge_ids:
@@ -339,14 +329,11 @@ def update_graph_for_candidate(project: Project, candidate: Candidate) -> None:
                 )
             )
             edge_ids.add(eid)
-
     hints = [reason.replace("concept:", "") for reason in candidate.reasons if reason.startswith("concept:")]
     for topic in hints[:4]:
         tid = topic_node_id(topic)
         if tid not in node_ids:
-            project.graph.nodes.append(
-                GraphNode(node_id=tid, node_type=NodeType.TOPIC, label=topic.title())
-            )
+            project.graph.nodes.append(GraphNode(node_id=tid, node_type=NodeType.TOPIC, label=topic.title()))
             node_ids.add(tid)
         eid = f"edge:{paper_id}:{tid}"
         if eid not in edge_ids:
@@ -369,19 +356,21 @@ def _candidate_id_from_node(node_id: str) -> Optional[str]:
     return None
 
 
-def _workspace_href(project_id: Optional[str], node_id: str) -> Optional[str]:
+def _workspace_href(project_id: Optional[str], node_id: str, active_tab: str = "search") -> Optional[str]:
     if not project_id:
         return None
     candidate_id = _candidate_id_from_node(node_id)
     if not candidate_id:
         return None
-    return f"/projects/{quote(project_id)}/workspace?selected={quote(candidate_id)}"
+    qp = f"selected={quote(candidate_id)}&tab={quote(active_tab)}"
+    return f"/projects/{quote(project_id)}/workspace?{qp}"
 
 
 def render_graph_svg(
     graph: Graph,
     selected_candidate_id: Optional[str] = None,
     project_id: Optional[str] = None,
+    active_tab: str = "search",
 ) -> str:
     width, height = 980, 680
     cx, cy = width / 2, height / 2
@@ -389,7 +378,6 @@ def render_graph_svg(
     nodes = graph.nodes
     positions: dict[str, tuple[float, float]] = {}
     total = max(len(nodes), 1)
-
     for index, node in enumerate(nodes):
         if node.node_type == NodeType.PAPER:
             r = radius * 0.42
@@ -399,28 +387,28 @@ def render_graph_svg(
             r = radius * 1.28
         angle = (2 * math.pi * index) / total
         positions[node.node_id] = (cx + math.cos(angle) * r, cy + math.sin(angle) * r)
-
     pieces = [
         f'<svg viewBox="0 0 {width} {height}" class="graph-svg" xmlns="http://www.w3.org/2000/svg">',
         '<defs><filter id="glow"><feGaussianBlur stdDeviation="6" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>',
         '<rect width="100%" height="100%" rx="24" class="graph-bg"/>',
     ]
-
     for edge in graph.edges:
         if edge.source not in positions or edge.target not in positions:
             continue
         x1, y1 = positions[edge.source]
         x2, y2 = positions[edge.target]
-        href = _workspace_href(project_id, edge.source) or _workspace_href(project_id, edge.target)
+        href = _workspace_href(project_id, edge.source, active_tab) or _workspace_href(project_id, edge.target, active_tab)
         line = (
             f'<line x1="{x1:.1f}" y1="{y1:.1f}" x2="{x2:.1f}" y2="{y2:.1f}" '
             f'class="graph-edge" data-source="{escape(edge.source)}" data-target="{escape(edge.target)}"/>'
         )
         if href:
-            pieces.append(f'<a href="{escape(href)}" class="graph-link">{line}</a>')
+            pieces.append(
+                f'<a href="{escape(href)}" hx-get="{escape(href)}" hx-target="#workspace" '
+                f'hx-swap="innerHTML" class="graph-link">{line}</a>'
+            )
         else:
             pieces.append(line)
-
     for node in nodes:
         x, y = positions[node.node_id]
         extra = " graph-node--selected" if selected_candidate_id and node.node_id.endswith(selected_candidate_id) else ""
@@ -431,15 +419,16 @@ def render_graph_svg(
             f'filter="url(#glow)" data-node-id="{escape(node.node_id)}"/>'
             f'<text x="{x:.1f}" y="{y + 30:.1f}" text-anchor="middle" class="graph-label">{escape(node.label[:44])}</text>'
         )
-        href = _workspace_href(project_id, node.node_id)
+        href = _workspace_href(project_id, node.node_id, active_tab)
         if href:
-            pieces.append(f'<a href="{escape(href)}" class="graph-link">{circle}</a>')
+            pieces.append(
+                f'<a href="{escape(href)}" hx-get="{escape(href)}" hx-target="#workspace" '
+                f'hx-swap="innerHTML" class="graph-link">{circle}</a>'
+            )
         else:
             pieces.append(circle)
-
     if not nodes:
         pieces.append('<text x="50%" y="50%" text-anchor="middle" class="graph-empty">Accept papers to grow your map.</text>')
-
     pieces.append('</svg>')
     return ''.join(pieces)
 ```
@@ -447,7 +436,7 @@ def render_graph_svg(
 ===== FILE: app/main.py =====
 
 Path: app/main.py
-Size: 9248 bytes
+Size: 11628 bytes
 ```py
 from pathlib import Path
 from typing import Optional
@@ -472,6 +461,7 @@ templates = Jinja2Templates(directory="app/templates")
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 FIXED_SEARCH_LIMIT = 8
+SCAN_TARGET_LIMIT = 3
 
 
 def _resolve_selected_candidate(project, selected_candidate_id: str = ""):
@@ -482,12 +472,16 @@ def _resolve_selected_candidate(project, selected_candidate_id: str = ""):
             return project.get_candidate(selected_candidate_id)
         except KeyError:
             pass
+    visible = project.visible_candidates(FIXED_SEARCH_LIMIT)
+    if visible:
+        return visible[0]
     return project.candidates[0]
 
 
-def _merge_expansion_candidates(project, incoming) -> None:
+def _merge_expansion_candidates(project, incoming) -> int:
     accepted_ids = {candidate.candidate_id for candidate in project.candidates}
     seen = {candidate.candidate_id for candidate in project.expansion_candidates}
+    added = 0
     for item in incoming:
         raw_candidate_id = item.candidate_id.removeprefix("exp-")
         if item.candidate_id in project.blacklist or raw_candidate_id in project.blacklist:
@@ -498,46 +492,56 @@ def _merge_expansion_candidates(project, incoming) -> None:
             continue
         project.expansion_candidates.append(item)
         seen.add(item.candidate_id)
+        added += 1
+    return added
+
+
+def _render_workspace(request: Request, project=None, **kwargs):
+    context = _workspace_context(project, **kwargs)
+    context["request"] = request
+    return templates.TemplateResponse(
+        request=request,
+        name="partials/workspace_bundle.html",
+        context=context,
+    )
 
 
 def _workspace_context(
     project=None,
     *,
     query: str = "",
-    search_error: str = "",
+    status_message: str = "",
     selected_candidate_id: str = "",
+    active_tab: str = "search",
 ):
     projects = store.list_projects()
     selected_candidate = _resolve_selected_candidate(project, selected_candidate_id)
     graph_svg = ""
+    visible_candidates = []
+    retrieval_candidates = []
     if project:
         graph_svg = render_graph_svg(
             project.graph,
             selected_candidate.candidate_id if selected_candidate else None,
             project.project_id,
         )
-
-    accepted_count = 0
-    deferred_count = 0
-    rejected_count = 0
-    if project:
-        accepted_count = sum(
-            1 for candidate in project.candidates if candidate.decision == Decision.YES
-        )
-        deferred_count = sum(
-            1 for candidate in project.candidates if candidate.decision == Decision.DEFER
-        )
-        rejected_count = sum(
-            1 for candidate in project.candidates if candidate.decision == Decision.NO
-        )
-
+        visible_candidates = project.visible_candidates(FIXED_SEARCH_LIMIT)
+        retrieval_candidates = [
+            candidate
+            for candidate in project.candidates
+            if candidate.decision in {Decision.YES, Decision.DEFER} or candidate.local_pdf_path or candidate.local_si_path
+        ]
+    accepted_count = sum(1 for candidate in project.candidates if candidate.decision == Decision.YES) if project else 0
+    deferred_count = sum(1 for candidate in project.candidates if candidate.decision == Decision.DEFER) if project else 0
+    rejected_count = sum(1 for candidate in project.candidates if candidate.decision == Decision.NO) if project else 0
     return {
         "app_name": settings.app_name,
         "projects": projects,
         "project": project,
-        "retrieval_items": store.retrieval_items(project) if project else [],
+        "visible_candidates": visible_candidates,
+        "retrieval_candidates": retrieval_candidates,
         "search_query": query,
-        "search_error": search_error,
+        "status_message": status_message,
         "selected_candidate": selected_candidate,
         "selected_candidate_id": selected_candidate.candidate_id if selected_candidate else "",
         "graph_svg": graph_svg,
@@ -545,6 +549,7 @@ def _workspace_context(
         "deferred_count": deferred_count,
         "rejected_count": rejected_count,
         "fixed_search_limit": FIXED_SEARCH_LIMIT,
+        "active_tab": active_tab,
     }
 
 
@@ -558,19 +563,9 @@ def index(request: Request):
 
 
 @app.post("/projects", response_class=HTMLResponse)
-def create_project(
-    request: Request,
-    title: str = Form(...),
-    description: str = Form(""),
-):
+def create_project(request: Request, title: str = Form(...), description: str = Form("")):
     project = store.create_project(title, description)
-    context = _workspace_context(project)
-    context["request"] = request
-    return templates.TemplateResponse(
-        request=request,
-        name="partials/workspace_bundle.html",
-        context=context,
-    )
+    return _render_workspace(request, project, active_tab="search")
 
 
 @app.post("/projects/{pid}/delete", response_class=HTMLResponse)
@@ -578,25 +573,13 @@ def delete_project(request: Request, pid: str):
     store.delete_project(pid)
     projects = store.list_projects()
     project = projects[0] if projects else None
-    context = _workspace_context(project)
-    context["request"] = request
-    return templates.TemplateResponse(
-        request=request,
-        name="partials/workspace_bundle.html",
-        context=context,
-    )
+    return _render_workspace(request, project, active_tab="search")
 
 
 @app.get("/projects/{pid}/workspace", response_class=HTMLResponse)
-def project_workspace(request: Request, pid: str, selected: str = ""):
+def project_workspace(request: Request, pid: str, selected: str = "", tab: str = "search"):
     project = store.get(pid)
-    context = _workspace_context(project, selected_candidate_id=selected)
-    context["request"] = request
-    return templates.TemplateResponse(
-        request=request,
-        name="partials/workspace_bundle.html",
-        context=context,
-    )
+    return _render_workspace(request, project, selected_candidate_id=selected, active_tab=tab)
 
 
 @app.post("/projects/{pid}/search", response_class=HTMLResponse)
@@ -604,43 +587,33 @@ def search_project(
     request: Request,
     pid: str,
     query: str = Form(...),
+    selected_candidate_id: str = Form(""),
+    active_tab: str = Form("search"),
     limit: Optional[int] = Form(default=None),
 ):
     project = store.get(pid)
-    search_error = ""
     effective_limit = FIXED_SEARCH_LIMIT
-
     if limit is not None:
         try:
-            effective_limit = (
-                FIXED_SEARCH_LIMIT
-                if int(limit) <= 0
-                else min(int(limit), FIXED_SEARCH_LIMIT)
-            )
+            effective_limit = FIXED_SEARCH_LIMIT if int(limit) <= 0 else min(int(limit), FIXED_SEARCH_LIMIT)
         except Exception:
             effective_limit = FIXED_SEARCH_LIMIT
-
+    status_message = ""
     try:
         results = run_search(query, limit=effective_limit)
     except Exception as exc:
         results = []
-        search_error = f"Search failed: {exc}"
-
+        status_message = f"Search failed: {exc}"
     project.upsert_candidates(results, query=query)
     store.save(project)
-
-    selected_candidate_id = results[0].candidate_id if results else ""
-    context = _workspace_context(
+    selected_candidate_id = results[0].candidate_id if results else selected_candidate_id
+    return _render_workspace(
+        request,
         project,
         query=query,
-        search_error=search_error,
+        status_message=status_message,
         selected_candidate_id=selected_candidate_id,
-    )
-    context["request"] = request
-    return templates.TemplateResponse(
-        request=request,
-        name="partials/workspace_bundle.html",
-        context=context,
+        active_tab="search",
     )
 
 
@@ -651,72 +624,134 @@ def decide_candidate(
     cid: str,
     decision: str = Form(...),
     query: str = Form(""),
+    active_tab: str = Form("search"),
 ):
     project = store.get(pid)
     candidate = project.set_decision(cid, Decision(decision))
-    search_error = ""
-
+    status_message = ""
     if candidate.decision == Decision.YES:
         update_graph_for_candidate(project, candidate)
-        try:
-            expanded = expand_from_candidate(candidate, limit=FIXED_SEARCH_LIMIT)
-        except Exception as exc:
-            expanded = []
-            search_error = f"Expansion warning: {exc}"
-
-        _merge_expansion_candidates(project, expanded)
         project.expansion_candidates = [
             item
             for item in project.expansion_candidates
             if item.candidate_id not in {cid, f"exp-{cid}"}
         ]
-
+        status_message = "Accepted and added to the map."
+    elif candidate.decision == Decision.NO:
+        status_message = "Marked as rejected."
+    elif candidate.decision == Decision.DEFER:
+        status_message = "Deferred for later review."
     store.save(project)
-
-    context = _workspace_context(
+    return _render_workspace(
+        request,
         project,
         query=query,
-        search_error=search_error,
+        status_message=status_message,
         selected_candidate_id=cid,
-    )
-    context["request"] = request
-    return templates.TemplateResponse(
-        request=request,
-        name="partials/workspace_bundle.html",
-        context=context,
+        active_tab=active_tab,
     )
 
 
-@app.post("/projects/{pid}/upload_pdf")
-def upload_pdf(pid: str, cid: str = Form(...), file: UploadFile = File(...)):
+@app.post("/projects/{pid}/scan_map", response_class=HTMLResponse)
+def scan_map_for_expansion(
+    request: Request,
+    pid: str,
+    selected_candidate_id: str = Form(""),
+    active_tab: str = Form("queue"),
+    query: str = Form(""),
+):
+    project = store.get(pid)
+    accepted = [candidate for candidate in reversed(project.candidates) if candidate.decision == Decision.YES]
+    status_message = ""
+    if not accepted:
+        status_message = "Accept at least one paper before scanning the map for expansion suggestions."
+        return _render_workspace(
+            request,
+            project,
+            query=query,
+            status_message=status_message,
+            selected_candidate_id=selected_candidate_id,
+            active_tab="queue",
+        )
+
+    total_added = 0
+    for candidate in accepted[:SCAN_TARGET_LIMIT]:
+        try:
+            total_added += _merge_expansion_candidates(
+                project,
+                expand_from_candidate(candidate, limit=FIXED_SEARCH_LIMIT),
+            )
+        except Exception as exc:
+            status_message = f"Expansion warning: {exc}"
+            break
+    if not status_message:
+        status_message = f"Map scan complete. Added {total_added} queued suggestions."
+    store.save(project)
+    focus_id = selected_candidate_id or (accepted[0].candidate_id if accepted else "")
+    return _render_workspace(
+        request,
+        project,
+        query=query,
+        status_message=status_message,
+        selected_candidate_id=focus_id,
+        active_tab="queue",
+    )
+
+
+@app.post("/projects/{pid}/upload_pdf", response_class=HTMLResponse)
+def upload_pdf(
+    request: Request,
+    pid: str,
+    cid: str = Form(...),
+    active_tab: str = Form("retrieval"),
+    query: str = Form(""),
+    file: UploadFile = File(...),
+):
     project = store.get(pid)
     library_dir = settings.library_dir
     candidate = project.get_candidate(cid)
     path = library_dir / Path(file.filename).name
-
     with open(path, "wb") as handle:
         handle.write(file.file.read())
-
     candidate.local_pdf_path = str(path)
     candidate.pdf_status = "manual"
     store.save(project)
-    return "ok"
+    return _render_workspace(
+        request,
+        project,
+        query=query,
+        status_message="PDF uploaded.",
+        selected_candidate_id=cid,
+        active_tab=active_tab,
+    )
 
 
-@app.post("/projects/{pid}/upload_si")
-def upload_si(pid: str, cid: str = Form(...), file: UploadFile = File(...)):
+@app.post("/projects/{pid}/upload_si", response_class=HTMLResponse)
+def upload_si(
+    request: Request,
+    pid: str,
+    cid: str = Form(...),
+    active_tab: str = Form("retrieval"),
+    query: str = Form(""),
+    file: UploadFile = File(...),
+):
     project = store.get(pid)
     library_dir = settings.library_dir
     candidate = project.get_candidate(cid)
     path = library_dir / f"SI_{Path(file.filename).name}"
-
     with open(path, "wb") as handle:
         handle.write(file.file.read())
-
     candidate.local_si_path = str(path)
     candidate.si_status = "manual"
     store.save(project)
-    return "ok"
+    return _render_workspace(
+        request,
+        project,
+        query=query,
+        status_message="Supplementary file uploaded.",
+        selected_candidate_id=cid,
+        active_tab=active_tab,
+    )
 
 
 @app.post("/projects/{pid}/export")
@@ -724,10 +759,8 @@ def export_project(pid: str):
     project = store.get(pid)
     output_dir = settings.exports_dir / project.project_id
     output_dir.mkdir(parents=True, exist_ok=True)
-
     papers_dir = output_dir / "papers"
     papers_dir.mkdir(exist_ok=True)
-
     import json
     import shutil
 
@@ -744,17 +777,15 @@ def export_project(pid: str):
                 "pdf": candidate.local_pdf_path,
             }
         )
-
     with open(output_dir / "metadata.json", "w") as handle:
         json.dump(metadata, handle, indent=2)
-
     return "ok"
 ```
 
 ===== FILE: app/models.py =====
 
 Path: app/models.py
-Size: 3996 bytes
+Size: 4837 bytes
 ```py
 from __future__ import annotations
 
@@ -844,6 +875,7 @@ class Project(BaseModel):
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
     candidates: list[Candidate] = Field(default_factory=list)
+    visible_candidate_ids: list[str] = Field(default_factory=list)
     expansion_candidates: list[ExpansionCandidate] = Field(default_factory=list)
     blacklist: Set[str] = Field(default_factory=set)
     graph: Graph = Field(default_factory=Graph)
@@ -862,24 +894,27 @@ class Project(BaseModel):
     def upsert_candidates(self, incoming, query: str = "") -> None:
         existing = {c.candidate_id: c for c in self.candidates}
         merged: dict[str, Candidate] = {}
+        visible_ids: list[str] = []
         for item in incoming:
             previous = existing.get(item.candidate_id)
             if previous is None:
                 merged[item.candidate_id] = item
-                continue
-            merged[item.candidate_id] = item.model_copy(
-                update={
-                    "decision": previous.decision,
-                    "pdf_status": previous.pdf_status,
-                    "local_pdf_path": previous.local_pdf_path,
-                    "si_status": previous.si_status,
-                    "local_si_path": previous.local_si_path,
-                }
-            )
+            else:
+                merged[item.candidate_id] = item.model_copy(
+                    update={
+                        "decision": previous.decision,
+                        "pdf_status": previous.pdf_status,
+                        "local_pdf_path": previous.local_pdf_path,
+                        "si_status": previous.si_status,
+                        "local_si_path": previous.local_si_path,
+                    }
+                )
+            visible_ids.append(item.candidate_id)
         for cid, item in existing.items():
             if cid not in merged:
                 merged[cid] = item
         self.candidates = list(merged.values())
+        self.visible_candidate_ids = visible_ids
         self.touch()
 
     def get_candidate(self, cid):
@@ -887,6 +922,21 @@ class Project(BaseModel):
             if candidate.candidate_id == cid:
                 return candidate
         raise KeyError(cid)
+
+    def visible_candidates(self, fallback_limit: int = 8) -> list[Candidate]:
+        if self.visible_candidate_ids:
+            visible: list[Candidate] = []
+            for cid in self.visible_candidate_ids:
+                try:
+                    visible.append(self.get_candidate(cid))
+                except KeyError:
+                    continue
+            if visible:
+                return visible
+        return self.candidates[:fallback_limit]
+
+    def accepted_candidates(self) -> list[Candidate]:
+        return [candidate for candidate in self.candidates if candidate.decision == Decision.YES]
 
     def set_decision(self, cid, d: Decision):
         candidate = self.get_candidate(cid)
@@ -1230,7 +1280,7 @@ def run_search(query: str, limit: int = 12):
 ===== FILE: app/static/app.css =====
 
 Path: app/static/app.css
-Size: 7782 bytes
+Size: 7969 bytes
 ```css
 :root {
   color-scheme: dark;
@@ -1259,14 +1309,15 @@ body {
     radial-gradient(circle at top right, rgba(106, 169, 255, 0.12), transparent 24%),
     linear-gradient(180deg, #0b1020 0%, #070a14 100%);
   color: var(--text);
+  overflow: hidden;
 }
 
 .shell {
   display: grid;
-  grid-template-columns: minmax(260px, 1fr) minmax(0, 3fr);
-  gap: 20px;
-  padding: 20px;
-  align-items: start;
+  grid-template-columns: minmax(250px, 0.9fr) minmax(0, 3.1fr);
+  gap: 18px;
+  padding: 18px;
+  height: 100vh;
 }
 
 .sidebar, .workspace { min-width: 0; }
@@ -1274,36 +1325,36 @@ body {
 .sidebar {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  position: sticky;
-  top: 20px;
-  max-height: calc(100vh - 40px);
+  gap: 14px;
   overflow: auto;
   padding-right: 4px;
 }
 
 .workspace {
   display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(320px, 1fr);
+  grid-template-columns: minmax(0, 2fr) minmax(340px, 1fr);
   gap: 18px;
-  align-items: start;
+  min-height: 0;
 }
 
-.brand { padding: 10px 8px 8px; }
+.workspace-right { display: flex; flex-direction: column; gap: 16px; min-width: 0; min-height: 0; }
+
+.brand { padding: 8px 8px 4px; }
 .brand h1 { margin: 0 0 6px; font-size: 1.9rem; }
 .eyebrow { text-transform: uppercase; letter-spacing: 0.18em; color: #9ec5ff; font-size: 0.72rem; margin: 0 0 8px; }
 .muted { color: var(--muted); }
 
-.card {
+.card, .rail-section {
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
-  padding: 18px;
   backdrop-filter: blur(16px);
 }
 
-.section-heading {
+.card { padding: 18px; }
+
+.section-heading, .toolbar-row {
   display: flex;
   justify-content: space-between;
   gap: 12px;
@@ -1317,12 +1368,10 @@ body {
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 10px;
-  margin-bottom: 14px;
   align-items: end;
 }
 
 label { display: grid; gap: 7px; font-size: 0.95rem; color: var(--muted); }
-
 input, textarea, button, summary { font: inherit; }
 
 input, textarea {
@@ -1358,13 +1407,39 @@ textarea { resize: vertical; }
 
 .stack { display: flex; flex-direction: column; gap: 12px; }
 .stack.compact { gap: 10px; }
+.chip-row, .decision-actions, .project-row, .tab-bar, .toolbar-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 
-.decision-actions, .chip-row, .project-row, .project-actions, .toolbar-row {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
+.decision-badge, .pill, .chip {
+  display: inline-flex;
   align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  background: rgba(255,255,255,0.06);
+  color: var(--muted);
+  white-space: nowrap;
 }
+
+.decision-yes { color: #9cf3db; background: rgba(46, 211, 160, 0.12); }
+.decision-no { color: #ffc0d0; background: rgba(255, 111, 145, 0.12); }
+.decision-defer { color: #ffe2ab; background: rgba(248, 184, 78, 0.14); }
+
+.rail-section { overflow: hidden; }
+.rail-section > summary {
+  list-style: none;
+  padding: 16px 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--text);
+  font-weight: 600;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.rail-section > summary::-webkit-details-marker { display: none; }
+.rail-section[open] > summary { background: rgba(255,255,255,0.04); }
+.rail-section-body { padding: 14px 18px 18px; }
 
 .project-row {
   justify-content: space-between;
@@ -1389,28 +1464,28 @@ textarea { resize: vertical; }
   cursor: pointer;
 }
 
-.project-pill small, .candidate-row p, .candidate-row small, .project-row small { color: var(--muted); margin: 6px 0 0; }
-.project-pill--active, .candidate-row--active, .result-card[open] { border-color: rgba(106, 169, 255, 0.5); background: rgba(106, 169, 255, 0.12); }
+.project-pill small, .project-row small, .candidate-meta { color: var(--muted); margin: 6px 0 0; }
+.project-pill--active, .result-card[open], .tab-active { border-color: rgba(106, 169, 255, 0.5); background: rgba(106, 169, 255, 0.12); }
 
-.decision-badge, .pill, .chip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 6px 10px;
-  border-radius: 999px;
-  font-size: 0.8rem;
-  background: var(--chip);
-  color: var(--muted);
-  white-space: nowrap;
+.map-panel {
+  min-height: 0;
+  height: calc(100vh - 36px);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  gap: 16px;
 }
 
-.decision-yes { color: #9cf3db; background: rgba(46, 211, 160, 0.12); }
-.decision-no { color: #ffc0d0; background: rgba(255, 111, 145, 0.12); }
-.decision-defer, .chip-warn { color: #ffe2ab; background: rgba(248, 184, 78, 0.14); }
+.map-frame {
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,0.04);
+  background: rgba(6, 11, 23, 0.45);
+  display: grid;
+  align-items: center;
+}
 
-.map-panel { min-height: calc(100vh - 40px); }
-.map-panel .graph-wrap { min-height: 70vh; display: grid; align-content: start; gap: 18px; }
-.graph-svg { width: 100%; height: auto; min-height: 620px; }
+.graph-svg { width: 100%; height: 100%; min-height: 0; }
 .graph-bg { fill: rgba(6, 11, 23, 0.72); stroke: rgba(106, 169, 255, 0.12); }
 .graph-edge { stroke: rgba(163, 184, 229, 0.28); stroke-width: 1.6; }
 .graph-node { stroke: rgba(255, 255, 255, 0.22); stroke-width: 1.8; cursor: pointer; }
@@ -1422,59 +1497,46 @@ textarea { resize: vertical; }
 .graph-empty { fill: var(--muted); font-size: 20px; }
 .graph-link { cursor: pointer; }
 
-.acquisition-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
 .mini-stat, .retrieval-row, .timeline-row, .result-card {
   background: rgba(255, 255, 255, 0.03);
-  padding: 12px 14px;
   border-radius: 16px;
   border: 1px solid var(--line);
 }
 
+.mini-stat { padding: 12px 14px; }
 .mini-stat span { display: block; color: var(--muted); font-size: 0.8rem; }
 .mini-stat strong { display: block; margin-top: 4px; }
-.export-banner { margin-top: 14px; padding: 12px 14px; border-radius: 16px; background: rgba(106, 169, 255, 0.12); color: #dce8ff; }
-.empty-state { min-height: 260px; display: grid; align-content: center; justify-items: start; }
-code { font-family: "SFMono-Regular", ui-monospace, monospace; }
+.acquisition-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
 
-.rail-section {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  padding: 0;
-  overflow: hidden;
+.status-banner {
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(106, 169, 255, 0.12);
+  color: #dce8ff;
+  border: 1px solid rgba(106, 169, 255, 0.16);
 }
 
-.rail-section > summary {
-  list-style: none;
-  padding: 16px 18px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  color: var(--text);
-  font-weight: 600;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
+.tab-bar { margin-bottom: 10px; }
+.tab-bar .btn { flex: 1; }
+
+.right-panel-card {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 12px;
+  min-height: 0;
+  height: calc(100vh - 36px);
 }
 
-.rail-section > summary::-webkit-details-marker { display: none; }
-.rail-section[open] > summary { background: rgba(255,255,255,0.04); }
-.rail-section-body { padding: 14px 18px 18px; }
-
-.results-scroll {
+.results-scroll, .tab-scroll {
+  min-height: 0;
+  overflow: auto;
+  padding-right: 4px;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  max-height: 48vh;
-  overflow: auto;
-  padding-right: 4px;
 }
 
-.result-card {
-  padding: 0;
-  overflow: hidden;
-}
-
+.result-card { padding: 0; overflow: hidden; }
 .result-card summary {
   list-style: none;
   cursor: pointer;
@@ -1484,7 +1546,6 @@ code { font-family: "SFMono-Regular", ui-monospace, monospace; }
   align-items: flex-start;
   padding: 14px;
 }
-
 .result-card summary::-webkit-details-marker { display: none; }
 .result-card-body {
   border-top: 1px solid rgba(255,255,255,0.06);
@@ -1493,33 +1554,38 @@ code { font-family: "SFMono-Regular", ui-monospace, monospace; }
   gap: 12px;
 }
 
-.candidate-meta { color: var(--muted); margin: 6px 0 0; }
-.workspace-right { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
-
-.toolbar-row { justify-content: space-between; }
+.retrieval-row, .timeline-row { padding: 12px 14px; }
+.empty-state { min-height: 220px; display: grid; align-content: center; justify-items: start; }
+code { font-family: "SFMono-Regular", ui-monospace, monospace; }
 
 @media (max-width: 1500px) {
   .acquisition-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 1180px) {
-  .shell { grid-template-columns: 1fr; }
-  .sidebar { position: static; max-height: none; overflow: visible; }
+  body { overflow: auto; }
+  .shell { grid-template-columns: 1fr; height: auto; }
   .workspace { grid-template-columns: 1fr; }
-  .map-panel { min-height: auto; }
-  .map-panel .graph-wrap { min-height: auto; }
-  .graph-svg { min-height: 460px; }
+  .map-panel, .right-panel-card { height: auto; }
+  .map-frame { min-height: 420px; }
+  .results-scroll, .tab-scroll { max-height: none; }
 }
 ```
 
 ===== FILE: app/static/app.js =====
 
 Path: app/static/app.js
-Size: 180 bytes
+Size: 391 bytes
 ```js
+document.body.addEventListener('htmx:beforeSwap', (event) => {
+  if (event.target && event.target.id === 'workspace') {
+    document.documentElement.classList.add('workspace-updating');
+  }
+});
+
 document.body.addEventListener('htmx:afterSwap', (event) => {
   if (event.target && event.target.id === 'workspace') {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    document.documentElement.classList.remove('workspace-updating');
   }
 });
 ```
@@ -1670,172 +1736,225 @@ Size: 1133 bytes
 ===== FILE: app/templates/partials/workspace.html =====
 
 Path: app/templates/partials/workspace.html
-Size: 8205 bytes
+Size: 11422 bytes
 ```html
 {% if project %}
 <section class="card map-panel">
-  <div class="graph-wrap">
-    <div class="section-heading">
-      <div>
-        <h2>{{ project.title }}</h2>
-        {% if project.description %}
-        <p class="muted">{{ project.description }}</p>
-        {% endif %}
-      </div>
-      <div class="chip-row">
-        <span class="pill">{{ accepted_count }} accepted</span>
-        <span class="pill">{{ project.expansion_candidates|length }} queued</span>
-      </div>
+  <div class="section-heading">
+    <div>
+      <h2>{{ project.title }}</h2>
+      {% if project.description %}
+      <p class="muted">{{ project.description }}</p>
+      {% endif %}
     </div>
-    <div>{{ graph_svg|safe }}</div>
-    <div class="acquisition-grid">
-      <div class="mini-stat"><span>Accepted</span><strong>{{ accepted_count }}</strong></div>
-      <div class="mini-stat"><span>Deferred</span><strong>{{ deferred_count }}</strong></div>
-      <div class="mini-stat"><span>Rejected</span><strong>{{ rejected_count }}</strong></div>
-      <div class="mini-stat"><span>Search scope</span><strong>{{ fixed_search_limit }} results</strong></div>
+    <div class="chip-row">
+      <span class="pill">{{ accepted_count }} accepted</span>
+      <span class="pill">{{ project.expansion_candidates|length }} queued</span>
     </div>
-    <div class="timeline-row">
-      <strong>Map interaction</strong>
-      <p class="muted">Paper nodes and links are now clickable entry points into the review panel. This keeps the graph ready for richer interactive editing without hiding today’s local-first workflow.</p>
-    </div>
+  </div>
+
+  <div class="map-frame">{{ graph_svg|safe }}</div>
+
+  <div class="chip-row">
+    <form hx-post="/projects/{{ project.project_id }}/scan_map" hx-target="#workspace" hx-swap="innerHTML">
+      <input type="hidden" name="selected_candidate_id" value="{{ selected_candidate_id }}">
+      <input type="hidden" name="query" value="{{ search_query or '' }}">
+      <input type="hidden" name="active_tab" value="queue">
+      <button class="btn btn-primary" type="submit">Scan map for expansion suggestions</button>
+    </form>
+    {% if selected_candidate %}
+    <button
+      class="btn btn-quiet"
+      hx-get="/projects/{{ project.project_id }}/workspace?selected={{ selected_candidate.candidate_id }}&tab=search"
+      hx-target="#workspace"
+      hx-swap="innerHTML"
+      type="button"
+    >
+      Focus selected paper
+    </button>
+    {% endif %}
+  </div>
+
+  <div class="acquisition-grid">
+    <div class="mini-stat"><span>Accepted</span><strong>{{ accepted_count }}</strong></div>
+    <div class="mini-stat"><span>Deferred</span><strong>{{ deferred_count }}</strong></div>
+    <div class="mini-stat"><span>Rejected</span><strong>{{ rejected_count }}</strong></div>
+    <div class="mini-stat"><span>Visible search set</span><strong>{{ visible_candidates|length }}</strong></div>
+  </div>
+
+  <div class="timeline-row">
+    <strong>Map interaction</strong>
+    <p class="muted">Accepting a paper now updates the map immediately without also running expansion lookups. Expansion is a deliberate, separate scan step so adding nodes stays smoother.</p>
   </div>
 </section>
 
 <aside class="workspace-right">
-  <section class="card">
+  <section class="card right-panel-card">
     <div class="toolbar-row">
       <div>
-        <h3>Search</h3>
-        <p class="muted">Fixed to the top {{ fixed_search_limit }} ranked results for a tighter review loop.</p>
+        <h3>Workspace tools</h3>
+        <p class="muted">Search, retrieval, and queue are separated into tabs so nothing important is hidden below the fold.</p>
       </div>
-      <span class="pill">{{ project.candidates|length }} cached</span>
+      <span class="pill">{{ fixed_search_limit }} result workspace</span>
     </div>
-    <form class="search-form" hx-post="/projects/{{ project.project_id }}/search" hx-target="#workspace" hx-swap="innerHTML">
-      <label>
-        Literature query
-        <input type="text" name="query" value="{{ search_query or '' }}" placeholder="e.g. immiscibility core mercury" required>
-      </label>
-      <button class="btn btn-primary" type="submit">Search</button>
-    </form>
-    {% if search_error %}
-    <div class="export-banner">{{ search_error }}</div>
-    {% endif %}
-    {% if project.candidates %}
-    <div class="results-scroll">
-      {% for candidate in project.candidates %}
-      <details class="result-card" {% if selected_candidate and candidate.candidate_id == selected_candidate.candidate_id %}open{% endif %}>
-        <summary>
-          <div>
-            <strong>{{ candidate.title }}</strong>
-            <p class="candidate-meta">
-              {% if candidate.authors %}{{ candidate.authors[:4]|join(', ') }}{% else %}Unknown authors{% endif %}
-              {% if candidate.year %} · {{ candidate.year }}{% endif %}
-              {% if candidate.journal %} · {{ candidate.journal }}{% endif %}
-            </p>
-            {% if candidate.doi %}<small>DOI: {{ candidate.doi }}</small>{% endif %}
-          </div>
-          <span class="decision-badge {% if candidate.decision.value == 'yes' %}decision-yes{% elif candidate.decision.value == 'no' %}decision-no{% elif candidate.decision.value == 'defer' %}decision-defer{% endif %}">
-            {{ candidate.decision.value }}
-          </span>
-        </summary>
-        <div class="result-card-body">
-          <div class="chip-row">
-            <span class="chip">PDF: {{ candidate.pdf_status }}</span>
-            <span class="chip">SI: {{ candidate.si_status }}</span>
-            {% if candidate.year %}<span class="chip">Year: {{ candidate.year }}</span>{% endif %}
-          </div>
 
-          {% if candidate.abstract %}
-          <div class="timeline-row">
-            <strong>Abstract</strong>
-            <p>{{ candidate.abstract }}</p>
-          </div>
-          {% else %}
-          <div class="timeline-row">
-            <strong>Review notes</strong>
-            <p class="muted">Expand a candidate, inspect the metadata, then record a deliberate accept / reject / defer decision to control map growth.</p>
-          </div>
-          {% endif %}
+    <div class="tab-bar">
+      <button class="btn {% if active_tab == 'search' %}tab-active{% endif %}" hx-get="/projects/{{ project.project_id }}/workspace?selected={{ selected_candidate_id }}&tab=search" hx-target="#workspace" hx-swap="innerHTML" type="button">Search</button>
+      <button class="btn {% if active_tab == 'retrieval' %}tab-active{% endif %}" hx-get="/projects/{{ project.project_id }}/workspace?selected={{ selected_candidate_id }}&tab=retrieval" hx-target="#workspace" hx-swap="innerHTML" type="button">PDF / Retrieval</button>
+      <button class="btn {% if active_tab == 'queue' %}tab-active{% endif %}" hx-get="/projects/{{ project.project_id }}/workspace?selected={{ selected_candidate_id }}&tab=queue" hx-target="#workspace" hx-swap="innerHTML" type="button">Expansion Queue</button>
+    </div>
 
-          <form class="decision-actions" hx-post="/projects/{{ project.project_id }}/candidates/{{ candidate.candidate_id }}/decision" hx-target="#workspace" hx-swap="innerHTML">
-            <input type="hidden" name="query" value="{{ search_query or '' }}">
-            <button class="btn btn-success" type="submit" name="decision" value="yes">Accept</button>
-            <button class="btn btn-warning" type="submit" name="decision" value="defer">Defer</button>
-            <button class="btn btn-danger" type="submit" name="decision" value="no">Reject</button>
-          </form>
+    <div class="tab-scroll">
+      {% if status_message %}
+      <div class="status-banner">{{ status_message }}</div>
+      {% endif %}
 
-          <div class="chip-row">
-            <button
-              class="btn btn-quiet"
-              hx-get="/projects/{{ project.project_id }}/workspace?selected={{ candidate.candidate_id }}"
-              hx-target="#workspace"
-              hx-swap="innerHTML"
-              type="button"
-            >
-              Focus in map
-            </button>
-            {% if candidate.doi %}
-            <a class="btn btn-quiet" href="https://doi.org/{{ candidate.doi }}" target="_blank" rel="noopener noreferrer">Open DOI</a>
-            <a class="btn btn-quiet" href="https://api.openalex.org/works?filter=doi:https://doi.org/{{ candidate.doi }}" target="_blank" rel="noopener noreferrer">OpenAlex</a>
+      {% if active_tab == 'search' %}
+      <form class="search-form" hx-post="/projects/{{ project.project_id }}/search" hx-target="#workspace" hx-swap="innerHTML">
+        <label>
+          Literature query
+          <input type="text" name="query" value="{{ search_query or '' }}" placeholder="e.g. immiscibility core mercury" required>
+        </label>
+        <input type="hidden" name="selected_candidate_id" value="{{ selected_candidate_id }}">
+        <input type="hidden" name="active_tab" value="search">
+        <button class="btn btn-primary" type="submit">Search</button>
+      </form>
+
+      {% if visible_candidates %}
+      <div class="results-scroll">
+        {% for candidate in visible_candidates %}
+        <details class="result-card" {% if selected_candidate and candidate.candidate_id == selected_candidate.candidate_id %}open{% endif %}>
+          <summary>
+            <div>
+              <strong>{{ candidate.title }}</strong>
+              <p class="candidate-meta">
+                {% if candidate.authors %}{{ candidate.authors[:4]|join(', ') }}{% else %}Unknown authors{% endif %}
+                {% if candidate.year %} · {{ candidate.year }}{% endif %}
+                {% if candidate.journal %} · {{ candidate.journal }}{% endif %}
+              </p>
+              {% if candidate.doi %}<small>DOI: {{ candidate.doi }}</small>{% endif %}
+            </div>
+            <span class="decision-badge {% if candidate.decision.value == 'yes' %}decision-yes{% elif candidate.decision.value == 'no' %}decision-no{% elif candidate.decision.value == 'defer' %}decision-defer{% endif %}">
+              {{ candidate.decision.value }}
+            </span>
+          </summary>
+          <div class="result-card-body">
+            <div class="chip-row">
+              <span class="chip">PDF: {{ candidate.pdf_status }}</span>
+              <span class="chip">SI: {{ candidate.si_status }}</span>
+              {% if candidate.year %}<span class="chip">Year: {{ candidate.year }}</span>{% endif %}
+            </div>
+
+            {% if candidate.abstract %}
+            <div class="timeline-row">
+              <strong>Abstract</strong>
+              <p>{{ candidate.abstract }}</p>
+            </div>
             {% else %}
-            <a class="btn btn-quiet" href="https://api.openalex.org/works?search={{ candidate.title|urlencode }}" target="_blank" rel="noopener noreferrer">Search OpenAlex</a>
-            <a class="btn btn-quiet" href="https://api.crossref.org/works?query={{ candidate.title|urlencode }}" target="_blank" rel="noopener noreferrer">Search Crossref</a>
+            <div class="timeline-row">
+              <strong>Review notes</strong>
+              <p class="muted">Expand a candidate, inspect the metadata, then record a deliberate accept / reject / defer decision to control map growth.</p>
+            </div>
             {% endif %}
-          </div>
-        </div>
-      </details>
-      {% endfor %}
-    </div>
-    {% else %}
-    <div class="empty-state">
-      <h3>No search results yet</h3>
-      <p class="muted">Run a search to populate candidates, then expand a result on the right to review it and take action.</p>
-    </div>
-    {% endif %}
-  </section>
 
-  <details class="card" open>
-    <summary><strong>Retrieval tracking</strong></summary>
-    <div class="stack compact" style="margin-top: 14px;">
-      {% if retrieval_items %}
-        {% for item in retrieval_items %}
+            <form class="decision-actions" hx-post="/projects/{{ project.project_id }}/candidates/{{ candidate.candidate_id }}/decision" hx-target="#workspace" hx-swap="innerHTML">
+              <input type="hidden" name="query" value="{{ search_query or '' }}">
+              <input type="hidden" name="active_tab" value="search">
+              <button class="btn btn-success" type="submit" name="decision" value="yes">Accept</button>
+              <button class="btn btn-warning" type="submit" name="decision" value="defer">Defer</button>
+              <button class="btn btn-danger" type="submit" name="decision" value="no">Reject</button>
+            </form>
+
+            <div class="chip-row">
+              <button class="btn btn-quiet" hx-get="/projects/{{ project.project_id }}/workspace?selected={{ candidate.candidate_id }}&tab=search" hx-target="#workspace" hx-swap="innerHTML" type="button">Focus in map</button>
+              {% if candidate.doi %}
+              <a class="btn btn-quiet" href="https://doi.org/{{ candidate.doi }}" target="_blank" rel="noopener noreferrer">Open DOI</a>
+              <a class="btn btn-quiet" href="https://api.openalex.org/works?filter=doi:https://doi.org/{{ candidate.doi }}" target="_blank" rel="noopener noreferrer">OpenAlex</a>
+              {% else %}
+              <a class="btn btn-quiet" href="https://api.openalex.org/works?search={{ candidate.title|urlencode }}" target="_blank" rel="noopener noreferrer">Search OpenAlex</a>
+              <a class="btn btn-quiet" href="https://api.crossref.org/works?query={{ candidate.title|urlencode }}" target="_blank" rel="noopener noreferrer">Search Crossref</a>
+              {% endif %}
+            </div>
+          </div>
+        </details>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty-state">
+        <h3>No search results yet</h3>
+        <p class="muted">Run a search to populate candidates, then expand a result here to review it and take action.</p>
+      </div>
+      {% endif %}
+
+      {% elif active_tab == 'retrieval' %}
+      <div class="timeline-row">
+        <strong>PDF ingress and retrieval</strong>
+        <p class="muted">Use this tab for manual PDF and supplementary uploads without scrolling away from the map.</p>
+      </div>
+      {% if retrieval_candidates %}
+      <div class="results-scroll">
+        {% for candidate in retrieval_candidates %}
         <div class="retrieval-row">
-          <strong>{{ item.title }}</strong>
-          <p>Decision: {{ item.decision.value }} · PDF: {{ item.pdf_status }} · SI: {{ item.si_status }}</p>
+          <strong>{{ candidate.title }}</strong>
+          <p>Decision: {{ candidate.decision.value }} · PDF: {{ candidate.pdf_status }} · SI: {{ candidate.si_status }}</p>
           <form hx-post="/projects/{{ project.project_id }}/upload_pdf" enctype="multipart/form-data">
-            <input type="hidden" name="cid" value="{{ item.candidate_id }}">
+            <input type="hidden" name="cid" value="{{ candidate.candidate_id }}">
+            <input type="hidden" name="active_tab" value="retrieval">
+            <input type="hidden" name="query" value="{{ search_query or '' }}">
             <input type="file" name="file"><button class="btn btn-quiet" type="submit">Upload PDF</button>
           </form>
           <form hx-post="/projects/{{ project.project_id }}/upload_si" enctype="multipart/form-data">
-            <input type="hidden" name="cid" value="{{ item.candidate_id }}">
+            <input type="hidden" name="cid" value="{{ candidate.candidate_id }}">
+            <input type="hidden" name="active_tab" value="retrieval">
+            <input type="hidden" name="query" value="{{ search_query or '' }}">
             <input type="file" name="file"><button class="btn btn-quiet" type="submit">Upload SI</button>
           </form>
         </div>
         {% endfor %}
+      </div>
       {% else %}
-        <p class="muted">Retrieval tracking fills in as papers are reviewed and gathered locally.</p>
+      <div class="empty-state">
+        <h3>No retrieval targets yet</h3>
+        <p class="muted">Accepted or deferred papers will appear here for local document ingress.</p>
+      </div>
       {% endif %}
-    </div>
-  </details>
 
-  <details class="card" open>
-    <summary><strong>Expansion queue</strong></summary>
-    <div class="stack compact" style="margin-top: 14px;">
+      {% elif active_tab == 'queue' %}
+      <div class="toolbar-row">
+        <div>
+          <h4>Expansion queue</h4>
+          <p class="muted">Use the scan action to populate fresh suggestions from papers already accepted into the map.</p>
+        </div>
+        <form hx-post="/projects/{{ project.project_id }}/scan_map" hx-target="#workspace" hx-swap="innerHTML">
+          <input type="hidden" name="selected_candidate_id" value="{{ selected_candidate_id }}">
+          <input type="hidden" name="query" value="{{ search_query or '' }}">
+          <input type="hidden" name="active_tab" value="queue">
+          <button class="btn btn-primary" type="submit">Scan map</button>
+        </form>
+      </div>
+
       {% if project.expansion_candidates %}
+      <div class="results-scroll">
         {% for item in project.expansion_candidates %}
         <div class="timeline-row">
           <strong>{{ item.title }}</strong>
           <p class="muted">Generated from {{ item.source_type }} for {{ item.source }}</p>
         </div>
         {% endfor %}
+      </div>
       {% else %}
-        <p class="muted">No queued expansion candidates yet. Accepting a paper can seed citation and author-related expansion here.</p>
+      <div class="empty-state">
+        <h3>No queued suggestions yet</h3>
+        <p class="muted">Accept papers into the map, then scan the map to find citation and author-related expansion candidates.</p>
+      </div>
       {% endif %}
+
       <form hx-post="/projects/{{ project.project_id }}/export">
         <button class="btn" type="submit">Export Project</button>
       </form>
+      {% endif %}
     </div>
-  </details>
+  </section>
 </aside>
 {% else %}
 <section class="card empty-state" style="grid-column: 1 / -1;">

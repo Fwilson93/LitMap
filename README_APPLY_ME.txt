@@ -1,23 +1,20 @@
-LitMap Slim layout + stability bundle
+LitMap Slim speed + tabbed rails bundle
 
 Included replacement files:
-- app/expand.py
 - app/graph.py
 - app/main.py
+- app/models.py
 - app/static/app.css
-- app/store.py
-- app/templates/page.html
-- app/templates/partials/project_list.html
+- app/static/app.js
 - app/templates/partials/workspace.html
 
 What this changes:
-- fixes the expansion crash caused by Semantic Scholar sections returning null
-- gives the map the centre half of the view with a larger canvas
-- keeps projects and new-project controls collapsible on the left rail
-- adds delete buttons for existing projects
-- moves search + expandable review cards to the right rail
-- fixes the search UI to a fixed top-8 result loop
-- makes paper nodes and graph links clickable entry points into review
+- removes the forced smooth-scroll after every HTMX swap
+- separates search, PDF ingress/retrieval, and expansion queue into tabs on the right rail
+- removes extra functionality panels from below the search results and below the map
+- adds a dedicated "Scan map for expansion suggestions" action
+- makes Accept/Reject/Defer faster by no longer running expansion automatically during node add
+- limits review to the current visible search result set while keeping cached candidates in the project
 
 Apply by copying these files into the repository root, preserving paths.
 

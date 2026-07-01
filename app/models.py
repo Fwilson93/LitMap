@@ -86,6 +86,7 @@ class Project(BaseModel):
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
     candidates: list[Candidate] = Field(default_factory=list)
+    visible_candidate_ids: list[str] = Field(default_factory=list)
     expansion_candidates: list[ExpansionCandidate] = Field(default_factory=list)
     blacklist: Set[str] = Field(default_factory=set)
     graph: Graph = Field(default_factory=Graph)
@@ -104,24 +105,27 @@ class Project(BaseModel):
     def upsert_candidates(self, incoming, query: str = "") -> None:
         existing = {c.candidate_id: c for c in self.candidates}
         merged: dict[str, Candidate] = {}
+        visible_ids: list[str] = []
         for item in incoming:
             previous = existing.get(item.candidate_id)
             if previous is None:
                 merged[item.candidate_id] = item
-                continue
-            merged[item.candidate_id] = item.model_copy(
-                update={
-                    "decision": previous.decision,
-                    "pdf_status": previous.pdf_status,
-                    "local_pdf_path": previous.local_pdf_path,
-                    "si_status": previous.si_status,
-                    "local_si_path": previous.local_si_path,
-                }
-            )
+            else:
+                merged[item.candidate_id] = item.model_copy(
+                    update={
+                        "decision": previous.decision,
+                        "pdf_status": previous.pdf_status,
+                        "local_pdf_path": previous.local_pdf_path,
+                        "si_status": previous.si_status,
+                        "local_si_path": previous.local_si_path,
+                    }
+                )
+            visible_ids.append(item.candidate_id)
         for cid, item in existing.items():
             if cid not in merged:
                 merged[cid] = item
         self.candidates = list(merged.values())
+        self.visible_candidate_ids = visible_ids
         self.touch()
 
     def get_candidate(self, cid):
@@ -129,6 +133,21 @@ class Project(BaseModel):
             if candidate.candidate_id == cid:
                 return candidate
         raise KeyError(cid)
+
+    def visible_candidates(self, fallback_limit: int = 8) -> list[Candidate]:
+        if self.visible_candidate_ids:
+            visible: list[Candidate] = []
+            for cid in self.visible_candidate_ids:
+                try:
+                    visible.append(self.get_candidate(cid))
+                except KeyError:
+                    continue
+            if visible:
+                return visible
+        return self.candidates[:fallback_limit]
+
+    def accepted_candidates(self) -> list[Candidate]:
+        return [candidate for candidate in self.candidates if candidate.decision == Decision.YES]
 
     def set_decision(self, cid, d: Decision):
         candidate = self.get_candidate(cid)
