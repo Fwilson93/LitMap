@@ -20,7 +20,7 @@ app/providers/semantic_scholar.py | size=1008 bytes
 app/search.py | size=4184 bytes [priority]
 app/static/app.css | size=5402 bytes
 app/static/app.js | size=180 bytes
-app/store.py | size=1151 bytes [priority]
+app/store.py | size=1192 bytes [priority]
 app/templates/page.html | size=1375 bytes
 app/templates/partials/project_list.html | size=648 bytes
 app/templates/partials/workspace.html | size=878 bytes
@@ -894,10 +894,11 @@ document.body.addEventListener('htmx:afterSwap', (event) => {
 ===== FILE: app/store.py =====
 
 Path: app/store.py
-Size: 1151 bytes
+Size: 1192 bytes
 ```py
 from pathlib import Path
-from app.models import Project, RetrievalItem
+from app.models import Project
+
 
 class ProjectStore:
     def __init__(self, projects_dir, library_dir, exports_dir):
@@ -908,7 +909,7 @@ class ProjectStore:
         self.exports_dir = exports_dir
 
     def path(self, pid):
-        return self.projects_dir / f'{pid}.json'
+        return self.projects_dir / f"{pid}.json"
 
     def create_project(self, title, description=""):
         p = Project.create(title, description)
@@ -924,13 +925,15 @@ class ProjectStore:
     def retrieval_items(self, project):
         items = []
         for c in project.candidates:
-            items.append({
-                "candidate_id": c.candidate_id,
-                "title": c.title,
-                "pdf_status": c.pdf_status,
-                "si_status": c.si_status,
-                "doi": c.doi
-            })
+            items.append(
+                {
+                    "candidate_id": c.candidate_id,
+                    "title": c.title,
+                    "pdf_status": c.pdf_status,
+                    "si_status": c.si_status,
+                    "doi": c.doi,
+                }
+            )
         return items
 ```
 
