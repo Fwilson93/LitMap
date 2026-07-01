@@ -9,8 +9,8 @@ README.md | size=1825 bytes [priority]
 app/__init__.py | size=0 bytes
 app/config.py | size=709 bytes
 app/graph.py | size=4091 bytes [priority]
-app/main.py | size=4048 bytes [priority]
-app/models.py | size=5982 bytes [priority]
+app/main.py | size=2967 bytes [priority]
+app/models.py | size=4507 bytes [priority]
 app/providers/base.py | size=219 bytes
 app/providers/crossref.py | size=1624 bytes
 app/providers/mock.py | size=9 bytes
@@ -22,7 +22,7 @@ app/static/app.js | size=180 bytes
 app/store.py | size=1435 bytes [priority]
 app/templates/page.html | size=1375 bytes
 app/templates/partials/project_list.html | size=648 bytes
-app/templates/partials/workspace.html | size=2136 bytes
+app/templates/partials/workspace.html | size=2294 bytes
 app/templates/partials/workspace_bundle.html | size=136 bytes
 first_statup.txt | size=137 bytes
 litmap_slim.egg-info/SOURCES.txt | size=681 bytes
@@ -269,7 +269,7 @@ def render_graph_svg(graph: Graph, selected_candidate_id: Optional[str] = None) 
 ===== FILE: app/main.py =====
 
 Path: app/main.py
-Size: 4048 bytes
+Size: 2967 bytes
 ```py
 from __future__ import annotations
 from pathlib import Path
@@ -284,108 +284,66 @@ from app.models import Decision, Graph, ExpansionCandidate
 from app.search import run_search
 from app.store import ProjectStore
 
-settings = get_settings()
-store = ProjectStore(settings.projects_dir, settings.library_dir, settings.exports_dir)
-app = FastAPI(title=settings.app_name)
+settings=get_settings()
+store=ProjectStore(settings.projects_dir,settings.library_dir,settings.exports_dir)
+app=FastAPI(title=settings.app_name)
 
-app.mount(
-    "/static",
-    StaticFiles(directory=Path(__file__).resolve().parent / "static"),
-    name="static",
-)
+app.mount("/static",StaticFiles(directory=Path(__file__).resolve().parent/"static"),name="static")
+templates=Jinja2Templates(directory=str(Path(__file__).resolve().parent/"templates"))
 
-templates = Jinja2Templates(directory=str(Path(__file__).resolve().parent / "templates"))
+def _ctx(pid:Optional[str]=None, scid:Optional[str]=None):
+    ps=store.list_projects()
+    p=store.get(pid) if pid else (ps[0] if ps else None)
+    sc=None; r=[]
+    if p:
+        r=store.retrieval_items(p)
+        if scid:
+            try: sc=p.get_candidate(scid)
+            except: sc=p.candidates[0] if p.candidates else None
+        elif p.candidates: sc=p.candidates[0]
+    g=render_graph_svg(p.graph if p else Graph(), scid)
+    return {"request":None,"projects":ps,"project":p,"selected_candidate":sc,"retrieval_items":r,"graph_svg":g,"export_dir":None}
 
+def _resp(req,ctx): ctx["request"]=req; return templates.TemplateResponse(req,"partials/workspace_bundle.html",ctx)
 
-def _page_context(project_id: Optional[str] = None, selected_candidate_id: Optional[str] = None):
-    projects = store.list_projects()
-    project = store.get(project_id) if project_id else (projects[0] if projects else None)
+@app.get("/",response_class=HTMLResponse)
+def index(request:Request): return templates.TemplateResponse(request,"page.html",{**_ctx(),"request":request})
 
-    selected_candidate = None
-    retrieval_items = []
+@app.post("/projects",response_class=HTMLResponse)
+def create(request:Request,title:str=Form(...),description:str=Form("")):
+    p=store.create_project(title,description)
+    return _resp(request,_ctx(p.project_id))
 
-    if project:
-        retrieval_items = store.retrieval_items(project)
-        if selected_candidate_id:
-            try:
-                selected_candidate = project.get_candidate(selected_candidate_id)
-            except KeyError:
-                selected_candidate = project.candidates[0] if project.candidates else None
-        elif project.candidates:
-            selected_candidate = project.candidates[0]
+@app.post("/projects/{pid}/search",response_class=HTMLResponse)
+def search(request:Request,pid:str,query:str=Form(...),limit:int=Form(8)):
+    p=store.get(pid)
+    res=run_search(query,limit)
+    p.replace_candidates(res,query)
+    store.save(p)
+    focus=p.candidates[0].candidate_id if p.candidates else None
+    return _resp(request,_ctx(pid,focus))
 
-    graph_svg = render_graph_svg(project.graph if project else Graph(), selected_candidate_id)
+@app.post("/projects/{pid}/candidates/{cid}/select",response_class=HTMLResponse)
+def select(request:Request,pid:str,cid:str):
+    return _resp(request,_ctx(pid,cid))
 
-    return {
-        "request": None,
-        "projects": projects,
-        "project": project,
-        "selected_candidate": selected_candidate,
-        "retrieval_items": retrieval_items,
-        "graph_svg": graph_svg,
-        "export_dir": None,
-    }
-
-
-def _workspace_response(request: Request, context):
-    context["request"] = request
-    return templates.TemplateResponse(request, "partials/workspace_bundle.html", context)
-
-
-@app.get("/", response_class=HTMLResponse)
-def index(request: Request):
-    context = _page_context()
-    context["request"] = request
-    return templates.TemplateResponse(request, "page.html", context)
-
-
-@app.post("/projects", response_class=HTMLResponse)
-def create_project(request: Request, title: str = Form(...), description: str = Form("")):
-    project = store.create_project(title=title, description=description)
-    return _workspace_response(request, _page_context(project.project_id))
-
-
-@app.post("/projects/{project_id}/search", response_class=HTMLResponse)
-def search_project(request: Request, project_id: str, query: str = Form(...), limit: int = Form(8)):
-    project = store.get(project_id)
-    results = run_search(query=query, limit=limit)
-    project.replace_candidates(results, query=query)
-    store.save(project)
-    focus = project.candidates[0].candidate_id if project.candidates else None
-    return _workspace_response(request, _page_context(project_id, focus))
-
-
-@app.post("/projects/{project_id}/candidates/{candidate_id}/decision", response_class=HTMLResponse)
-def decide_candidate(request: Request, project_id: str, candidate_id: str, decision: str = Form(...), notes: str = Form("")):
-    project = store.get(project_id)
-
-    try:
-        parsed = Decision(decision)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid decision.")
-
-    candidate = project.set_decision(candidate_id, parsed, notes=notes)
-
-    if parsed == Decision.YES:
-        update_graph_for_candidate(project, candidate)
-
-        # ✅ ADD expansion placeholder safely
-        project.add_expansion([
-            ExpansionCandidate(
-                candidate_id=f"exp-{candidate_id}",
-                title=f"Related to: {candidate.title}",
-                source=candidate_id
-            )
-        ])
-
-    store.save(project)
-    return _workspace_response(request, _page_context(project_id, candidate_id))
+@app.post("/projects/{pid}/candidates/{cid}/decision",response_class=HTMLResponse)
+def decide(request:Request,pid:str,cid:str,decision:str=Form(...),notes:str=Form("")):
+    p=store.get(pid)
+    try: d=Decision(decision)
+    except: raise HTTPException(400,"Invalid decision")
+    c=p.set_decision(cid,d,notes)
+    if d==Decision.YES:
+        update_graph_for_candidate(p,c)
+        p.add_expansion([ExpansionCandidate(candidate_id=f"exp-{cid}",title=f"Related to: {c.title}",source=cid)])
+    store.save(p)
+    return _resp(request,_ctx(pid,cid))
 ```
 
 ===== FILE: app/models.py =====
 
 Path: app/models.py
-Size: 5982 bytes
+Size: 4507 bytes
 ```py
 from __future__ import annotations
 from datetime import datetime, timezone
@@ -394,200 +352,118 @@ from typing import Any, Optional, Set
 from uuid import uuid4
 from pydantic import BaseModel, Field
 
-
 def utc_now() -> datetime:
     return datetime.now(timezone.utc)
-
 
 def make_id(prefix: str) -> str:
     return f"{prefix}_{uuid4().hex[:10]}"
 
-
 def slugify(value: str) -> str:
-    cleaned: list[str] = []
-    last_dash = False
-    for char in value.lower().strip():
-        if char.isalnum():
-            cleaned.append(char)
-            last_dash = False
-        elif not last_dash:
-            cleaned.append("-")
-            last_dash = True
+    cleaned=[]; last=False
+    for c in value.lower().strip():
+        if c.isalnum(): cleaned.append(c); last=False
+        elif not last: cleaned.append("-"); last=True
     return "".join(cleaned).strip("-") or "project"
 
-# -----------------------------
-# Enums (RESTORED)
-# -----------------------------
 class Decision(str, Enum):
-    UNREVIEWED = "unreviewed"
-    YES = "yes"
-    NO = "no"
-    DEFER = "defer"
+    UNREVIEWED="unreviewed"; YES="yes"; NO="no"; DEFER="defer"
 
 class NodeType(str, Enum):
-    PAPER = "paper"
-    AUTHOR = "author"
-    TOPIC = "topic"
+    PAPER="paper"; AUTHOR="author"; TOPIC="topic"
 
 class EdgeType(str, Enum):
-    PAPER_AUTHOR = "paper_author"
-    PAPER_TOPIC = "paper_topic"
+    PAPER_AUTHOR="paper_author"; PAPER_TOPIC="paper_topic"
 
-# -----------------------------
-# Core Models (RESTORED)
-# -----------------------------
 class TimelineEvent(BaseModel):
-    event_id: str = Field(default_factory=lambda: make_id("evt"))
-    event_type: str
-    timestamp: datetime = Field(default_factory=utc_now)
-    message: str
-    payload: dict[str, Any] = Field(default_factory=dict)
+    event_id:str=Field(default_factory=lambda:make_id("evt"))
+    event_type:str; timestamp:datetime=Field(default_factory=utc_now)
+    message:str; payload:dict[str,Any]=Field(default_factory=dict)
 
 class Candidate(BaseModel):
-    candidate_id: str
-    title: str
-    authors: list[str] = Field(default_factory=list)
-    journal: str = ""
-    year: Optional[int] = None
-    doi: Optional[str] = None
-    abstract: str = ""
-    reasons: list[str] = Field(default_factory=list)
-    keywords: list[str] = Field(default_factory=list)
-    decision: Decision = Decision.UNREVIEWED
-    notes: str = ""
-    local_pdf_present: bool = False
-    local_pdf_path: Optional[str] = None
-    local_supplement_present: bool = False
-    local_supplement_path: Optional[str] = None
+    candidate_id:str; title:str
+    authors:list[str]=Field(default_factory=list)
+    journal:str=""; year:Optional[int]=None
+    doi:Optional[str]=None; abstract:str=""
+    reasons:list[str]=Field(default_factory=list)
+    keywords:list[str]=Field(default_factory=list)
+    decision:Decision=Decision.UNREVIEWED
+    notes:str=""; local_pdf_present:bool=False
+    local_pdf_path:Optional[str]=None
+    local_supplement_present:bool=False
+    local_supplement_path:Optional[str]=None
 
-# -----------------------------
-# Graph Models (RESTORED)
-# -----------------------------
 class GraphNode(BaseModel):
-    node_id: str
-    node_type: NodeType
-    label: str
-
+    node_id:str; node_type:NodeType; label:str
 
 class GraphEdge(BaseModel):
-    edge_id: str
-    edge_type: EdgeType
-    source: str
-    target: str
-    label: str = ""
-
+    edge_id:str; edge_type:EdgeType
+    source:str; target:str; label:str=""
 
 class Graph(BaseModel):
-    nodes: list[GraphNode] = Field(default_factory=list)
-    edges: list[GraphEdge] = Field(default_factory=list)
-
+    nodes:list[GraphNode]=Field(default_factory=list)
+    edges:list[GraphEdge]=Field(default_factory=list)
 
 class RetrievalItem(BaseModel):
-    candidate_id: str
-    title: str
-    pdf_missing: bool
-    supplement_missing: bool
-    lookup_hint: str
+    candidate_id:str; title:str
+    pdf_missing:bool; supplement_missing:bool; lookup_hint:str
 
-# -----------------------------
-# NEW: Expansion Models
-# -----------------------------
 class ExpansionCandidate(BaseModel):
-    candidate_id: str
-    title: str
-    source: str
+    candidate_id:str; title:str; source:str
 
-# -----------------------------
-# Project Model (RESTORED + EXTENDED)
-# -----------------------------
 class Project(BaseModel):
-    project_id: str
-    title: str
-    description: str = ""
-    search_query: str = ""
-    created_at: datetime = Field(default_factory=utc_now)
-    updated_at: datetime = Field(default_factory=utc_now)
-    candidates: list[Candidate] = Field(default_factory=list)
-    graph: Graph = Field(default_factory=Graph)
-    timeline: list[TimelineEvent] = Field(default_factory=list)
-
-    # ✅ NEW additions (non-breaking)
-    expansion_candidates: list[ExpansionCandidate] = Field(default_factory=list)
-    blacklist: Set[str] = Field(default_factory=set)
+    project_id:str; title:str; description:str=""; search_query:str=""
+    created_at:datetime=Field(default_factory=utc_now)
+    updated_at:datetime=Field(default_factory=utc_now)
+    candidates:list[Candidate]=Field(default_factory=list)
+    graph:Graph=Field(default_factory=Graph)
+    timeline:list[TimelineEvent]=Field(default_factory=list)
+    expansion_candidates:list[ExpansionCandidate]=Field(default_factory=list)
+    blacklist:Set[str]=Field(default_factory=set)
 
     @classmethod
-    def create(cls, title: str, description: str = "") -> "Project":
-        project = cls(
-            project_id=slugify(title),
-            title=title,
-            description=description,
-        )
-        project.timeline.append(
-            TimelineEvent(
-                event_type="project_created",
-                message=f"Created project '{title}'.",
-            )
-        )
-        return project
+    def create(cls,title:str,description:str=""):
+        p=cls(project_id=slugify(title),title=title,description=description)
+        p.timeline.append(TimelineEvent(event_type="project_created",message=f"Created project '{title}'."))
+        return p
 
-    def touch(self) -> None:
-        self.updated_at = utc_now()
+    def candidate_map(self): return {c.candidate_id:c for c in self.candidates}
 
-    def candidate_map(self) -> dict[str, Candidate]:
-        return {c.candidate_id: c for c in self.candidates}
+    def replace_candidates(self,incoming:list[Candidate],query:str):
+        existing=self.candidate_map(); new=[]
+        for i in incoming:
+            if i.candidate_id in existing:
+                cur=existing[i.candidate_id]; i.decision=cur.decision; i.notes=cur.notes
+            new.append(i)
+        self.candidates=new; self.search_query=query
 
-    def replace_candidates(self, incoming: list[Candidate], query: str) -> None:
-        existing = self.candidate_map()
-        new = []
-        for item in incoming:
-            if item.candidate_id in existing:
-                current = existing[item.candidate_id]
-                item.decision = current.decision
-                item.notes = current.notes
-            new.append(item)
-        self.candidates = new
-        self.search_query = query
+    def upsert_candidates(self,incoming:list[Candidate],query:str=""):
+        m=self.candidate_map()
+        for i in incoming: m[i.candidate_id]=i
+        self.candidates=list(m.values())
+        if query: self.search_query=query
 
-    def add_event(self, event_type: str, message: str, **payload: Any) -> None:
-        self.timeline.insert(
-            0,
-            TimelineEvent(
-                event_type=event_type,
-                message=message,
-                payload=payload,
-            ),
-        )
-        self.touch()
+    def add_event(self,et, msg, **pl):
+        self.timeline.insert(0,TimelineEvent(event_type=et,message=msg,payload=pl))
 
-    def get_candidate(self, candidate_id: str) -> Candidate:
+    def get_candidate(self,cid:str):
         for c in self.candidates:
-            if c.candidate_id == candidate_id:
-                return c
-        raise KeyError(candidate_id)
+            if c.candidate_id==cid: return c
+        raise KeyError(cid)
 
-    def set_decision(self, candidate_id: str, decision: Decision, notes: str = "") -> Candidate:
-        candidate = self.get_candidate(candidate_id)
-        candidate.decision = decision
-        candidate.notes = notes
-        self.add_event(
-            "candidate_decision",
-            f"Marked '{candidate.title}' as {decision.value}.",
-            candidate_id=candidate_id,
-            decision=decision.value,
-        )
-        return candidate
+    def set_decision(self,cid:str,d:Decision,notes:str=""):
+        c=self.get_candidate(cid); c.decision=d; c.notes=notes
+        self.add_event("candidate_decision",f"Marked '{c.title}' as {d.value}.",candidate_id=cid,decision=d.value)
+        return c
 
-    # ✅ NEW expansion-safe helpers
-    def add_expansion(self, items: list[ExpansionCandidate]) -> None:
-        for item in items:
-            if item.candidate_id in self.blacklist:
-                continue
-            if item.candidate_id not in [c.candidate_id for c in self.expansion_candidates]:
-                self.expansion_candidates.append(item)
+    def add_expansion(self,items):
+        for i in items:
+            if i.candidate_id in self.blacklist: continue
+            if i.candidate_id not in [c.candidate_id for c in self.expansion_candidates]:
+                self.expansion_candidates.append(i)
 
-    def blacklist_item(self, cid: str) -> None:
+    def blacklist_item(self,cid):
         self.blacklist.add(cid)
-        self.expansion_candidates = [c for c in self.expansion_candidates if c.candidate_id != cid]
+        self.expansion_candidates=[c for c in self.expansion_candidates if c.candidate_id!=cid]
 ```
 
 ===== FILE: app/providers/base.py =====
@@ -1163,7 +1039,7 @@ Size: 648 bytes
 ===== FILE: app/templates/partials/workspace.html =====
 
 Path: app/templates/partials/workspace.html
-Size: 2136 bytes
+Size: 2294 bytes
 ```html
 {% if project %}
 <section class="workspace-header card hero">
@@ -1176,62 +1052,53 @@ Size: 2136 bytes
 
 <div class="workspace-grid">
   <section class="card search-card">
-    <div class="section-heading">
-      <h3>Search</h3>
-      <span class="pill">live providers</span>
-    </div>
+    <div class="section-heading"><h3>Search</h3><span class="pill">live providers</span></div>
 
     <form class="search-form" hx-post="/projects/{{ project.project_id }}/search" hx-target="#workspace" hx-swap="innerHTML">
-      <input type="text" name="query" placeholder="Search papers" required value="{{ project.search_query }}">
-      <input type="number" name="limit" value="8" min="1" max="20">
-      <button class="btn btn-primary" type="submit">Search</button>
+      <input type="text" name="query" required value="{{ project.search_query }}">
+      <input type="number" name="limit" value="8">
+      <button class="btn btn-primary">Search</button>
     </form>
 
     {% if project.candidates %}
-      <div class="stack">
-        {% for c in project.candidates %}
-          <div class="candidate-row {% if selected_candidate and c.candidate_id == selected_candidate.candidate_id %}candidate-row--active{% endif %}">
-            <div>
-              <strong>{{ c.title }}</strong>
-              <p>{{ c.authors | join(', ') }}</p>
-              <small>{{ c.journal }} {{ c.year }}</small>
-            </div>
+    <div class="stack">
+      {% for c in project.candidates %}
+      <form hx-post="/projects/{{ project.project_id }}/candidates/{{ c.candidate_id }}/select" hx-target="#workspace" hx-swap="innerHTML">
+        <button class="candidate-row {% if selected_candidate and c.candidate_id == selected_candidate.candidate_id %}candidate-row--active{% endif %}" type="submit">
+          <div>
+            <strong>{{ c.title }}</strong>
+            <p>{{ c.authors | join(', ') }}</p>
+            <small>{{ c.journal }} {{ c.year }}</small>
           </div>
-        {% endfor %}
-      </div>
+        </button>
+      </form>
+      {% endfor %}
+    </div>
     {% else %}
-      <p class="muted">No candidates yet.</p>
+    <p class="muted">No candidates yet.</p>
+    {% endif %}
+  </section>
+
+  <section class="card">
+    <h3>Decision</h3>
+    {% if selected_candidate %}
+      <h4>{{ selected_candidate.title }}</h4>
+      <form hx-post="/projects/{{ project.project_id }}/candidates/{{ selected_candidate.candidate_id }}/decision" hx-target="#workspace" hx-swap="innerHTML">
+        <div class="decision-actions">
+          <button class="btn btn-success" name="decision" value="yes">Accept</button>
+          <button class="btn btn-danger" name="decision" value="no">Reject</button>
+          <button class="btn btn-warning" name="decision" value="defer">Defer</button>
+        </div>
+      </form>
+    {% else %}
+      <p class="muted">Select a paper</p>
     {% endif %}
   </section>
 
   <section class="card">
     <h3>Graph</h3>
-    <div class="graph-wrap">
-      {{ graph_svg | safe }}
-    </div>
+    <div class="graph-wrap">{{ graph_svg | safe }}</div>
   </section>
-
-  <section class="card">
-    <h3>Retrieval</h3>
-    {% if retrieval_items %}
-      <div class="stack">
-        {% for r in retrieval_items %}
-          <div class="retrieval-row">
-            <strong>{{ r.title }}</strong>
-            <small>PDF missing: {{ r.pdf_missing }} | SI missing: {{ r.supplement_missing }}</small>
-          </div>
-        {% endfor %}
-      </div>
-    {% else %}
-      <p class="muted">No retrieval items yet.</p>
-    {% endif %}
-  </section>
-</div>
-
-{% else %}
-<div class="empty-state card">
-  <h2>No project selected</h2>
-  <p>Create or select a project to begin.</p>
 </div>
 {% endif %}
 ```

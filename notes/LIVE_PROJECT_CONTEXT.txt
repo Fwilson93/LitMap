@@ -1,5 +1,5 @@
 LIVE PROJECT CONTEXT
-Generated: 2026-07-01T13:50:50.034952+00:00
+Generated: 2026-07-01T13:56:15.482956+00:00
 Repository root: /Users/fwilson/Documents/Data/litmap_slim
 ===== PROJECT INTENT =====
 
@@ -130,7 +130,7 @@ uvicorn app.main:app --reload
 ===== GIT SNAPSHOT =====
 
 Branch: main
-Commit: 7c569d67c3658914d12aa16c13d0cdc5ab6a1dda
+Commit: 800037bc23287834af7a59774684f3f3b3b3697d
 
 Status:
 D .venv/lib/python3.9/site-packages/__pycache__/py.cpython-39.pyc
@@ -246,8 +246,6 @@ D .venv/lib/python3.9/site-packages/__pycache__/py.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/iniconfig/__pycache__/__init__.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/iniconfig/__pycache__/_parse.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/iniconfig/__pycache__/exceptions.cpython-39.pyc
- D .venv/lib/python3.9/site-packages/jinja2/__pycache__/debug.cpython-39.pyc
- M .venv/lib/python3.9/site-packages/jinja2/__pycache__/environment.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/jinja2/__pycache__/filters.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/jinja2/__pycache__/nodes.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/jinja2/__pycache__/parser.cpython-39.pyc
@@ -272,6 +270,7 @@ D .venv/lib/python3.9/site-packages/__pycache__/py.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/pydantic/_internal/__pycache__/_fields.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/pydantic/_internal/__pycache__/_known_annotated_metadata.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/pydantic/_internal/__pycache__/_schema_gather.cpython-39.pyc
+ M .venv/lib/python3.9/site-packages/pydantic/v1/__pycache__/class_validators.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/pydantic/v1/__pycache__/main.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/pydantic/v1/__pycache__/networks.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/pydantic/v1/__pycache__/schema.cpython-39.pyc
@@ -303,77 +302,25 @@ D .venv/lib/python3.9/site-packages/__pycache__/py.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/tomli/__pycache__/_re.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/typing_inspection/__pycache__/introspection.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/uvicorn/middleware/__pycache__/proxy_headers.cpython-39.pyc
+ M app/__pycache__/main.cpython-39.pyc
+ M app/__pycache__/models.cpython-39.pyc
  M app/__pycache__/search.cpython-39.pyc
+ M app/main.py
+ M app/models.py
  M app/templates/partials/workspace.html
- D litmap_batch5_1_fix.zip
- D litmap_batch5_1_fix2.zip
+ M data/projects/test0.json
  M scripts/__pycache__/_context_common.cpython-39.pyc
  D tests/__pycache__/conftest.cpython-39-pytest-8.4.2.pyc
  D tests/__pycache__/test_app.cpython-39-pytest-8.4.2.pyc
  D tests/__pycache__/test_store.cpython-39-pytest-8.4.2.pyc
  D tests/__pycache__/test_tools.cpython-39-pytest-8.4.2.pyc
-?? .venv/lib/python3.9/site-packages/certifi/__pycache__/
-?? .venv/lib/python3.9/site-packages/httpcore/__pycache__/
-?? .venv/lib/python3.9/site-packages/httpcore/_async/__pycache__/
-?? .venv/lib/python3.9/site-packages/httpcore/_backends/__pycache__/
-?? .venv/lib/python3.9/site-packages/httpcore/_sync/__pycache__/
-?? data/projects/test11.json
+?? data/projects/test12.json
+?? litmap_batch5_2.zip
 
 ===== AUTOMATED CHECKS =====
 
-Return code: 1
-..F....                                                                  [100%]
-=================================== FAILURES ===================================
-________________________ test_project_store_round_trip _________________________
-
-tmp_path = PosixPath('/private/var/folders/0c/744fr1ys6s5_l2rtcdlvzpfw0000gn/T/pytest-of-fwilson/pytest-25/test_project_store_round_trip0')
-
-    def test_project_store_round_trip(tmp_path: Path) -> None:
-        store = ProjectStore(tmp_path / 'projects', tmp_path / 'library', tmp_path / 'exports')
-        project = store.create_project('Core Conductivity')
->       project.upsert_candidates([
-            Candidate(candidate_id='abc123', title='Thermal conductivity paper', authors=['A. Author'], journal='Nature', year=2012)
-        ], query='conductivity')
-
-tests/test_store.py:12: 
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
-
-self = Project(project_id='core-conductivity', title='Core Conductivity', description='', search_query='', created_at=datetim....timezone.utc), message="Created project 'Core Conductivity'.", payload={})], expansion_candidates=[], blacklist=set())
-item = 'upsert_candidates'
-
-    def __getattr__(self, item: str) -> Any:
-        private_attributes = object.__getattribute__(self, '__private_attributes__')
-        if item in private_attributes:
-            attribute = private_attributes[item]
-            if hasattr(attribute, '__get__'):
-                return attribute.__get__(self, type(self))  # type: ignore
-    
-            try:
-                # Note: self.__pydantic_private__ cannot be None if self.__private_attributes__ has items
-                return self.__pydantic_private__[item]  # type: ignore
-            except KeyError as exc:
-                raise AttributeError(f'{type(self).__name__!r} object has no attribute {item!r}') from exc
-        else:
-            # `__pydantic_extra__` can fail to be set if the model is not yet fully initialized.
-            # See `BaseModel.__repr_args__` for more details
-            try:
-                pydantic_extra = object.__getattribute__(self, '__pydantic_extra__')
-            except AttributeError:
-                pydantic_extra = None
-    
-            if pydantic_extra and item in pydantic_extra:
-                return pydantic_extra[item]
-            else:
-                if hasattr(self.__class__, item):
-                    return super().__getattribute__(item)  # Raises AttributeError if appropriate
-                else:
-                    # this is the current error
->                   raise AttributeError(f'{type(self).__name__!r} object has no attribute {item!r}')
-E                   AttributeError: 'Project' object has no attribute 'upsert_candidates'
-
-.venv/lib/python3.9/site-packages/pydantic/main.py:1042: AttributeError
-=========================== short test summary info ============================
-FAILED tests/test_store.py::test_project_store_round_trip - AttributeError: '...
+Return code: 0
+.......                                                                  [100%]
 
 ===== REPOSITORY TREE =====
 
@@ -402,6 +349,7 @@ FAILED tests/test_store.py::test_project_store_round_trip - AttributeError: '...
       - workspace.html
       - workspace_bundle.html
 - first_statup.txt
+- litmap_batch5_2.zip
 - litmap_slim.egg-info/
   - PKG-INFO
   - SOURCES.txt
@@ -434,8 +382,8 @@ FAILED tests/test_store.py::test_project_store_round_trip - AttributeError: '...
 - app/__init__.py (0 bytes)
 - app/config.py (709 bytes)
 - app/graph.py (4091 bytes) [priority]
-- app/main.py (4048 bytes) [priority]
-- app/models.py (5982 bytes) [priority]
+- app/main.py (2967 bytes) [priority]
+- app/models.py (4507 bytes) [priority]
 - app/providers/base.py (219 bytes)
 - app/providers/crossref.py (1624 bytes)
 - app/providers/mock.py (9 bytes)
@@ -447,7 +395,7 @@ FAILED tests/test_store.py::test_project_store_round_trip - AttributeError: '...
 - app/store.py (1435 bytes) [priority]
 - app/templates/page.html (1375 bytes)
 - app/templates/partials/project_list.html (648 bytes)
-- app/templates/partials/workspace.html (2136 bytes)
+- app/templates/partials/workspace.html (2294 bytes)
 - app/templates/partials/workspace_bundle.html (136 bytes)
 - first_statup.txt (137 bytes)
 - litmap_slim.egg-info/SOURCES.txt (681 bytes)

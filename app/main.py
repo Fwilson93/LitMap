@@ -11,99 +11,57 @@ from app.models import Decision, Graph, ExpansionCandidate
 from app.search import run_search
 from app.store import ProjectStore
 
-settings = get_settings()
-store = ProjectStore(settings.projects_dir, settings.library_dir, settings.exports_dir)
-app = FastAPI(title=settings.app_name)
+settings=get_settings()
+store=ProjectStore(settings.projects_dir,settings.library_dir,settings.exports_dir)
+app=FastAPI(title=settings.app_name)
 
-app.mount(
-    "/static",
-    StaticFiles(directory=Path(__file__).resolve().parent / "static"),
-    name="static",
-)
+app.mount("/static",StaticFiles(directory=Path(__file__).resolve().parent/"static"),name="static")
+templates=Jinja2Templates(directory=str(Path(__file__).resolve().parent/"templates"))
 
-templates = Jinja2Templates(directory=str(Path(__file__).resolve().parent / "templates"))
+def _ctx(pid:Optional[str]=None, scid:Optional[str]=None):
+    ps=store.list_projects()
+    p=store.get(pid) if pid else (ps[0] if ps else None)
+    sc=None; r=[]
+    if p:
+        r=store.retrieval_items(p)
+        if scid:
+            try: sc=p.get_candidate(scid)
+            except: sc=p.candidates[0] if p.candidates else None
+        elif p.candidates: sc=p.candidates[0]
+    g=render_graph_svg(p.graph if p else Graph(), scid)
+    return {"request":None,"projects":ps,"project":p,"selected_candidate":sc,"retrieval_items":r,"graph_svg":g,"export_dir":None}
 
+def _resp(req,ctx): ctx["request"]=req; return templates.TemplateResponse(req,"partials/workspace_bundle.html",ctx)
 
-def _page_context(project_id: Optional[str] = None, selected_candidate_id: Optional[str] = None):
-    projects = store.list_projects()
-    project = store.get(project_id) if project_id else (projects[0] if projects else None)
+@app.get("/",response_class=HTMLResponse)
+def index(request:Request): return templates.TemplateResponse(request,"page.html",{**_ctx(),"request":request})
 
-    selected_candidate = None
-    retrieval_items = []
+@app.post("/projects",response_class=HTMLResponse)
+def create(request:Request,title:str=Form(...),description:str=Form("")):
+    p=store.create_project(title,description)
+    return _resp(request,_ctx(p.project_id))
 
-    if project:
-        retrieval_items = store.retrieval_items(project)
-        if selected_candidate_id:
-            try:
-                selected_candidate = project.get_candidate(selected_candidate_id)
-            except KeyError:
-                selected_candidate = project.candidates[0] if project.candidates else None
-        elif project.candidates:
-            selected_candidate = project.candidates[0]
+@app.post("/projects/{pid}/search",response_class=HTMLResponse)
+def search(request:Request,pid:str,query:str=Form(...),limit:int=Form(8)):
+    p=store.get(pid)
+    res=run_search(query,limit)
+    p.replace_candidates(res,query)
+    store.save(p)
+    focus=p.candidates[0].candidate_id if p.candidates else None
+    return _resp(request,_ctx(pid,focus))
 
-    graph_svg = render_graph_svg(project.graph if project else Graph(), selected_candidate_id)
+@app.post("/projects/{pid}/candidates/{cid}/select",response_class=HTMLResponse)
+def select(request:Request,pid:str,cid:str):
+    return _resp(request,_ctx(pid,cid))
 
-    return {
-        "request": None,
-        "projects": projects,
-        "project": project,
-        "selected_candidate": selected_candidate,
-        "retrieval_items": retrieval_items,
-        "graph_svg": graph_svg,
-        "export_dir": None,
-    }
-
-
-def _workspace_response(request: Request, context):
-    context["request"] = request
-    return templates.TemplateResponse(request, "partials/workspace_bundle.html", context)
-
-
-@app.get("/", response_class=HTMLResponse)
-def index(request: Request):
-    context = _page_context()
-    context["request"] = request
-    return templates.TemplateResponse(request, "page.html", context)
-
-
-@app.post("/projects", response_class=HTMLResponse)
-def create_project(request: Request, title: str = Form(...), description: str = Form("")):
-    project = store.create_project(title=title, description=description)
-    return _workspace_response(request, _page_context(project.project_id))
-
-
-@app.post("/projects/{project_id}/search", response_class=HTMLResponse)
-def search_project(request: Request, project_id: str, query: str = Form(...), limit: int = Form(8)):
-    project = store.get(project_id)
-    results = run_search(query=query, limit=limit)
-    project.replace_candidates(results, query=query)
-    store.save(project)
-    focus = project.candidates[0].candidate_id if project.candidates else None
-    return _workspace_response(request, _page_context(project_id, focus))
-
-
-@app.post("/projects/{project_id}/candidates/{candidate_id}/decision", response_class=HTMLResponse)
-def decide_candidate(request: Request, project_id: str, candidate_id: str, decision: str = Form(...), notes: str = Form("")):
-    project = store.get(project_id)
-
-    try:
-        parsed = Decision(decision)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid decision.")
-
-    candidate = project.set_decision(candidate_id, parsed, notes=notes)
-
-    if parsed == Decision.YES:
-        update_graph_for_candidate(project, candidate)
-
-        # ✅ ADD expansion placeholder safely
-        project.add_expansion([
-            ExpansionCandidate(
-                candidate_id=f"exp-{candidate_id}",
-                title=f"Related to: {candidate.title}",
-                source=candidate_id
-            )
-        ])
-
-    store.save(project)
-    return _workspace_response(request, _page_context(project_id, candidate_id))
+@app.post("/projects/{pid}/candidates/{cid}/decision",response_class=HTMLResponse)
+def decide(request:Request,pid:str,cid:str,decision:str=Form(...),notes:str=Form("")):
+    p=store.get(pid)
+    try: d=Decision(decision)
+    except: raise HTTPException(400,"Invalid decision")
+    c=p.set_decision(cid,d,notes)
+    if d==Decision.YES:
+        update_graph_for_candidate(p,c)
+        p.add_expansion([ExpansionCandidate(candidate_id=f"exp-{cid}",title=f"Related to: {c.title}",source=cid)])
+    store.save(p)
+    return _resp(request,_ctx(pid,cid))
