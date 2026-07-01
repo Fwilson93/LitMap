@@ -6,30 +6,29 @@ crossref = CrossrefProvider()
 openalex = OpenAlexProvider()
 
 
-def expand_from_candidate(candidate: Candidate, limit: int = 5):
+def expand_from_candidate(candidate: Candidate, limit: int = 6):
     results = []
 
-    # --- citation-style (Crossref search by title / DOI) ---
+    # --- attempt citation-like using DOI first ---
+    query = candidate.doi if candidate.doi else candidate.title
     try:
-        refs = crossref.search(candidate.doi or candidate.title, limit)
+        citation_results = crossref.search(query, limit)
     except Exception:
-        refs = []
+        citation_results = []
 
     # --- author expansion ---
     author_results = []
     if candidate.authors:
-        primary_author = candidate.authors[0]
         try:
-            author_results = openalex.search(primary_author, limit // 2 or 1)
+            author_results = openalex.search(candidate.authors[0], max(2, limit//2))
         except Exception:
             author_results = []
 
-    combined = refs + author_results
+    combined = citation_results + author_results
 
     seen = set()
-
     for r in combined:
-        key = r.doi or r.title.lower()
+        key = (r.doi or r.title.lower())
         if key in seen:
             continue
         seen.add(key)

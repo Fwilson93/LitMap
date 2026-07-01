@@ -5,6 +5,7 @@ from fastapi import FastAPI, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+
 from app.config import get_settings
 from app.graph import render_graph_svg, update_graph_for_candidate
 from app.models import Decision, Graph
@@ -90,7 +91,6 @@ def search(request: Request, pid: str, query: str = Form(...), limit: int = Form
 @app.post("/projects/{pid}/candidates/{cid}/decision", response_class=HTMLResponse)
 def decide(request: Request, pid: str, cid: str, decision: str = Form(...)):
     p = store.get(pid)
-
     try:
         d = Decision(decision)
     except ValueError:
@@ -106,7 +106,6 @@ def decide(request: Request, pid: str, cid: str, decision: str = Form(...)):
     return _resp(request, _ctx(pid, cid))
 
 
-# --- expansion queue endpoints (restored) ---
 @app.post("/projects/{pid}/expand/{cid}/accept", response_class=HTMLResponse)
 def expand_accept(request: Request, pid: str, cid: str):
     p = store.get(pid)
@@ -131,15 +130,24 @@ def expand_blacklist(request: Request, pid: str, cid: str):
     return _resp(request, _ctx(pid))
 
 
-# --- retrieval: simple DOI-based hint system ---
+# ✅ Batch 7.1: file-based retrieval simulation
 @app.post("/projects/{pid}/retrieval/auto", response_class=HTMLResponse)
 def retrieval_auto(request: Request, pid: str):
     p = store.get(pid)
 
+    lib = settings.library_dir
+    lib.mkdir(parents=True, exist_ok=True)
+
     for c in p.candidates:
-        if c.doi:
-            # mark as "found" (placeholder for real download)
+        if c.doi and not c.local_pdf_present:
+            fname = f"{c.candidate_id}.pdf"
+            fpath = lib / fname
+
+            # simulate download → write placeholder PDF
+            fpath.write_text(f"PDF placeholder for DOI: {c.doi}")
+
             c.local_pdf_present = True
+            c.local_pdf_path = str(fpath)
 
     store.save(p)
     return _resp(request, _ctx(pid, mode="retrieval"))

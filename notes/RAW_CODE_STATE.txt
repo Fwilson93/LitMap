@@ -8,9 +8,9 @@ Max file bytes: 80000
 README.md | size=1825 bytes [priority]
 app/__init__.py | size=0 bytes
 app/config.py | size=709 bytes
-app/expand.py | size=1196 bytes
+app/expand.py | size=1221 bytes
 app/graph.py | size=4091 bytes [priority]
-app/main.py | size=4902 bytes [priority]
+app/main.py | size=5139 bytes [priority]
 app/models.py | size=4507 bytes [priority]
 app/providers/base.py | size=219 bytes
 app/providers/crossref.py | size=1624 bytes
@@ -171,7 +171,7 @@ def get_settings() -> Settings:
 ===== FILE: app/expand.py =====
 
 Path: app/expand.py
-Size: 1196 bytes
+Size: 1221 bytes
 ```py
 from app.providers.crossref import CrossrefProvider
 from app.providers.openalex import OpenAlexProvider
@@ -181,30 +181,29 @@ crossref = CrossrefProvider()
 openalex = OpenAlexProvider()
 
 
-def expand_from_candidate(candidate: Candidate, limit: int = 5):
+def expand_from_candidate(candidate: Candidate, limit: int = 6):
     results = []
 
-    # --- citation-style (Crossref search by title / DOI) ---
+    # --- attempt citation-like using DOI first ---
+    query = candidate.doi if candidate.doi else candidate.title
     try:
-        refs = crossref.search(candidate.doi or candidate.title, limit)
+        citation_results = crossref.search(query, limit)
     except Exception:
-        refs = []
+        citation_results = []
 
     # --- author expansion ---
     author_results = []
     if candidate.authors:
-        primary_author = candidate.authors[0]
         try:
-            author_results = openalex.search(primary_author, limit // 2 or 1)
+            author_results = openalex.search(candidate.authors[0], max(2, limit//2))
         except Exception:
             author_results = []
 
-    combined = refs + author_results
+    combined = citation_results + author_results
 
     seen = set()
-
     for r in combined:
-        key = r.doi or r.title.lower()
+        key = (r.doi or r.title.lower())
         if key in seen:
             continue
         seen.add(key)
@@ -323,7 +322,7 @@ def render_graph_svg(graph: Graph, selected_candidate_id: Optional[str] = None) 
 ===== FILE: app/main.py =====
 
 Path: app/main.py
-Size: 4902 bytes
+Size: 5139 bytes
 ```py
 from __future__ import annotations
 from pathlib import Path
@@ -332,6 +331,7 @@ from fastapi import FastAPI, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+
 from app.config import get_settings
 from app.graph import render_graph_svg, update_graph_for_candidate
 from app.models import Decision, Graph
@@ -417,7 +417,6 @@ def search(request: Request, pid: str, query: str = Form(...), limit: int = Form
 @app.post("/projects/{pid}/candidates/{cid}/decision", response_class=HTMLResponse)
 def decide(request: Request, pid: str, cid: str, decision: str = Form(...)):
     p = store.get(pid)
-
     try:
         d = Decision(decision)
     except ValueError:
@@ -433,7 +432,6 @@ def decide(request: Request, pid: str, cid: str, decision: str = Form(...)):
     return _resp(request, _ctx(pid, cid))
 
 
-# --- expansion queue endpoints (restored) ---
 @app.post("/projects/{pid}/expand/{cid}/accept", response_class=HTMLResponse)
 def expand_accept(request: Request, pid: str, cid: str):
     p = store.get(pid)
@@ -458,15 +456,24 @@ def expand_blacklist(request: Request, pid: str, cid: str):
     return _resp(request, _ctx(pid))
 
 
-# --- retrieval: simple DOI-based hint system ---
+# ✅ Batch 7.1: file-based retrieval simulation
 @app.post("/projects/{pid}/retrieval/auto", response_class=HTMLResponse)
 def retrieval_auto(request: Request, pid: str):
     p = store.get(pid)
 
+    lib = settings.library_dir
+    lib.mkdir(parents=True, exist_ok=True)
+
     for c in p.candidates:
-        if c.doi:
-            # mark as "found" (placeholder for real download)
+        if c.doi and not c.local_pdf_present:
+            fname = f"{c.candidate_id}.pdf"
+            fpath = lib / fname
+
+            # simulate download → write placeholder PDF
+            fpath.write_text(f"PDF placeholder for DOI: {c.doi}")
+
             c.local_pdf_present = True
+            c.local_pdf_path = str(fpath)
 
     store.save(p)
     return _resp(request, _ctx(pid, mode="retrieval"))

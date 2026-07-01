@@ -1,5 +1,5 @@
 LIVE PROJECT CONTEXT
-Generated: 2026-07-01T14:26:46.353632+00:00
+Generated: 2026-07-01T14:33:15.717090+00:00
 Repository root: /Users/fwilson/Documents/Data/litmap_slim
 ===== PROJECT INTENT =====
 
@@ -130,15 +130,13 @@ uvicorn app.main:app --reload
 ===== GIT SNAPSHOT =====
 
 Branch: main
-Commit: 4b826d3ecb7e41de36c51f50ef6eeb01bdacc8c3
+Commit: 72cc69b19dd04fbffab574764e46802c1a70b6c6
 
 Status:
 M app/expand.py
  M app/main.py
- D litmap_batch5_3.zip
- D litmap_batch5_4.zip
- D litmap_batch6.zip
-?? litmap_batch6_1_and_7.zip
+ D litmap_batch6_1_and_7.zip
+?? litmap_batch6_2_7_1.zip
 
 ===== AUTOMATED CHECKS =====
 
@@ -173,7 +171,7 @@ Return code: 0
       - workspace.html
       - workspace_bundle.html
 - first_statup.txt
-- litmap_batch6_1_and_7.zip
+- litmap_batch6_2_7_1.zip
 - litmap_slim.egg-info/
   - PKG-INFO
   - SOURCES.txt
@@ -205,9 +203,9 @@ Return code: 0
 - README.md (1825 bytes) [priority]
 - app/__init__.py (0 bytes)
 - app/config.py (709 bytes)
-- app/expand.py (1196 bytes)
+- app/expand.py (1221 bytes)
 - app/graph.py (4091 bytes) [priority]
-- app/main.py (4902 bytes) [priority]
+- app/main.py (5139 bytes) [priority]
 - app/models.py (4507 bytes) [priority]
 - app/providers/base.py (219 bytes)
 - app/providers/crossref.py (1624 bytes)
