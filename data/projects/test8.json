@@ -1,0 +1,342 @@
+{
+  "project_id": "test8",
+  "title": "test8",
+  "description": "",
+  "search_query": "core conductivity pozzo",
+  "created_at": "2026-07-01T12:30:36.397415Z",
+  "updated_at": "2026-07-01T12:35:38.594564Z",
+  "candidates": [
+    {
+      "candidate_id": "cd84e09badee",
+      "title": "Thermal and electrical conductivity of iron at Earth’s core conditions",
+      "authors": [
+        "Monica Pozzo",
+        "Chris Davies",
+        "David Gubbins",
+        "Dario Alfè"
+      ],
+      "journal": "Nature",
+      "year": 2012,
+      "doi": "10.1038/nature11031",
+      "abstract": "",
+      "reasons": [],
+      "keywords": [],
+      "decision": "yes",
+      "notes": "",
+      "local_pdf_present": false,
+      "local_pdf_path": null,
+      "local_supplement_present": false,
+      "local_supplement_path": null
+    },
+    {
+      "candidate_id": "bf15f1a79a98",
+      "title": "Towards reconciling experimental and computational determinations of Earth's core thermal conductivity",
+      "authors": [
+        "Monica Pozzo",
+        "Christopher J. Davies",
+        "Dario Alfè"
+      ],
+      "journal": "Earth and Planetary Science Letters",
+      "year": 2022,
+      "doi": "10.1016/j.epsl.2022.117466",
+      "abstract": "",
+      "reasons": [],
+      "keywords": [],
+      "decision": "unreviewed",
+      "notes": "",
+      "local_pdf_present": false,
+      "local_pdf_path": null,
+      "local_supplement_present": false,
+      "local_supplement_path": null
+    },
+    {
+      "candidate_id": "1f7de5bd99e9",
+      "title": "Core, Electrical Conductivity",
+      "authors": [],
+      "journal": "SpringerReference",
+      "year": null,
+      "doi": "10.1007/springerreference_77539",
+      "abstract": "",
+      "reasons": [],
+      "keywords": [],
+      "decision": "unreviewed",
+      "notes": "",
+      "local_pdf_present": false,
+      "local_pdf_path": null,
+      "local_supplement_present": false,
+      "local_supplement_path": null
+    },
+    {
+      "candidate_id": "d048ed7dfdf5",
+      "title": "Thermal and electrical conductivity of solid iron and iron–silicon mixtures at Earth's core conditions",
+      "authors": [
+        "Monica Pozzo",
+        "Chris Davies",
+        "David Gubbins",
+        "Dario Alfè"
+      ],
+      "journal": "Earth and Planetary Science Letters",
+      "year": 2014,
+      "doi": "10.1016/j.epsl.2014.02.047",
+      "abstract": "",
+      "reasons": [],
+      "keywords": [],
+      "decision": "unreviewed",
+      "notes": "",
+      "local_pdf_present": false,
+      "local_pdf_path": null,
+      "local_supplement_present": false,
+      "local_supplement_path": null
+    },
+    {
+      "candidate_id": "4fb670d3f5c1",
+      "title": "The formation and evolution of Earth’s inner core.",
+      "authors": [
+        "Alfred Wilson",
+        "Chris Davies",
+        "Andrew Walker",
+        "Monica Pozzo",
+        "Dario Alfè",
+        "Arwen Deuss"
+      ],
+      "journal": "",
+      "year": null,
+      "doi": "10.31223/x58q51",
+      "abstract": "",
+      "reasons": [],
+      "keywords": [],
+      "decision": "unreviewed",
+      "notes": "",
+      "local_pdf_present": false,
+      "local_pdf_path": null,
+      "local_supplement_present": false,
+      "local_supplement_path": null
+    },
+    {
+      "candidate_id": "71c3442c4929",
+      "title": "Electrical and thermal conductivity of liquid sodium from first-principles calculations",
+      "authors": [
+        "Monica Pozzo",
+        "Michael P. Desjarlais",
+        "Dario Alfè"
+      ],
+      "journal": "Physical Review B",
+      "year": 2011,
+      "doi": "10.1103/physrevb.84.054203",
+      "abstract": "",
+      "reasons": [],
+      "keywords": [],
+      "decision": "unreviewed",
+      "notes": "",
+      "local_pdf_present": false,
+      "local_pdf_path": null,
+      "local_supplement_present": false,
+      "local_supplement_path": null
+    },
+    {
+      "candidate_id": "31c5ff0863c3",
+      "title": "Precipitation of light elements from Earth’s liquid core: Can exsolution power the ancient geodynamo?",
+      "authors": [
+        "Alfred Wilson",
+        "Monica Pozzo",
+        "Dario Alfè",
+        "Andrew Walker",
+        "Anne Pommier",
+        "Sam Greenwood",
+        "Chris Davies"
+      ],
+      "journal": "",
+      "year": null,
+      "doi": "10.5194/egusphere-egu23-16247",
+      "abstract": "",
+      "reasons": [],
+      "keywords": [],
+      "decision": "unreviewed",
+      "notes": "",
+      "local_pdf_present": false,
+      "local_pdf_path": null,
+      "local_supplement_present": false,
+      "local_supplement_path": null
+    }
+  ],
+  "graph": {
+    "nodes": [
+      {
+        "node_id": "paper:e765e8817982",
+        "node_type": "paper",
+        "label": "Internally consistent thermodynamic database for iron to the Earth's core conditions"
+      },
+      {
+        "node_id": "author:tetsuya komabayashi",
+        "node_type": "author",
+        "label": "Tetsuya Komabayashi"
+      },
+      {
+        "node_id": "author:yingwei fei",
+        "node_type": "author",
+        "label": "Yingwei Fei"
+      },
+      {
+        "node_id": "paper:bb34a8a61f76",
+        "node_type": "paper",
+        "label": "Iron isotopes trace primordial magma ocean cumulates melting in the Earth’s upper mantle"
+      },
+      {
+        "node_id": "author:helen williams",
+        "node_type": "author",
+        "label": "Helen Williams"
+      },
+      {
+        "node_id": "author:simon matthews",
+        "node_type": "author",
+        "label": "Simon Matthews"
+      },
+      {
+        "node_id": "author:hanika rizo",
+        "node_type": "author",
+        "label": "Hanika Rizo"
+      },
+      {
+        "node_id": "author:oliver shorttle",
+        "node_type": "author",
+        "label": "Oliver Shorttle"
+      },
+      {
+        "node_id": "paper:cd84e09badee",
+        "node_type": "paper",
+        "label": "Thermal and electrical conductivity of iron at Earth’s core conditions"
+      },
+      {
+        "node_id": "author:monica pozzo",
+        "node_type": "author",
+        "label": "Monica Pozzo"
+      },
+      {
+        "node_id": "author:chris davies",
+        "node_type": "author",
+        "label": "Chris Davies"
+      },
+      {
+        "node_id": "author:david gubbins",
+        "node_type": "author",
+        "label": "David Gubbins"
+      },
+      {
+        "node_id": "author:dario alfè",
+        "node_type": "author",
+        "label": "Dario Alfè"
+      }
+    ],
+    "edges": [
+      {
+        "edge_id": "edge:paper:e765e8817982:author:tetsuya komabayashi",
+        "edge_type": "paper_author",
+        "source": "paper:e765e8817982",
+        "target": "author:tetsuya komabayashi",
+        "label": "author"
+      },
+      {
+        "edge_id": "edge:paper:e765e8817982:author:yingwei fei",
+        "edge_type": "paper_author",
+        "source": "paper:e765e8817982",
+        "target": "author:yingwei fei",
+        "label": "author"
+      },
+      {
+        "edge_id": "edge:paper:bb34a8a61f76:author:helen williams",
+        "edge_type": "paper_author",
+        "source": "paper:bb34a8a61f76",
+        "target": "author:helen williams",
+        "label": "author"
+      },
+      {
+        "edge_id": "edge:paper:bb34a8a61f76:author:simon matthews",
+        "edge_type": "paper_author",
+        "source": "paper:bb34a8a61f76",
+        "target": "author:simon matthews",
+        "label": "author"
+      },
+      {
+        "edge_id": "edge:paper:bb34a8a61f76:author:hanika rizo",
+        "edge_type": "paper_author",
+        "source": "paper:bb34a8a61f76",
+        "target": "author:hanika rizo",
+        "label": "author"
+      },
+      {
+        "edge_id": "edge:paper:bb34a8a61f76:author:oliver shorttle",
+        "edge_type": "paper_author",
+        "source": "paper:bb34a8a61f76",
+        "target": "author:oliver shorttle",
+        "label": "author"
+      },
+      {
+        "edge_id": "edge:paper:cd84e09badee:author:monica pozzo",
+        "edge_type": "paper_author",
+        "source": "paper:cd84e09badee",
+        "target": "author:monica pozzo",
+        "label": "author"
+      },
+      {
+        "edge_id": "edge:paper:cd84e09badee:author:chris davies",
+        "edge_type": "paper_author",
+        "source": "paper:cd84e09badee",
+        "target": "author:chris davies",
+        "label": "author"
+      },
+      {
+        "edge_id": "edge:paper:cd84e09badee:author:david gubbins",
+        "edge_type": "paper_author",
+        "source": "paper:cd84e09badee",
+        "target": "author:david gubbins",
+        "label": "author"
+      },
+      {
+        "edge_id": "edge:paper:cd84e09badee:author:dario alfè",
+        "edge_type": "paper_author",
+        "source": "paper:cd84e09badee",
+        "target": "author:dario alfè",
+        "label": "author"
+      }
+    ]
+  },
+  "timeline": [
+    {
+      "event_id": "evt_1b6b70d8ac",
+      "event_type": "candidate_decision",
+      "timestamp": "2026-07-01T12:35:38.594463Z",
+      "message": "Marked 'Thermal and electrical conductivity of iron at Earth’s core conditions' as yes.",
+      "payload": {
+        "candidate_id": "cd84e09badee",
+        "decision": "yes"
+      }
+    },
+    {
+      "event_id": "evt_46017d86d0",
+      "event_type": "candidate_decision",
+      "timestamp": "2026-07-01T12:34:01.319846Z",
+      "message": "Marked 'Iron isotopes trace primordial magma ocean cumulates melting in the Earth’s upper mantle' as yes.",
+      "payload": {
+        "candidate_id": "bb34a8a61f76",
+        "decision": "yes"
+      }
+    },
+    {
+      "event_id": "evt_6e2b7507ae",
+      "event_type": "candidate_decision",
+      "timestamp": "2026-07-01T12:32:27.810823Z",
+      "message": "Marked 'Internally consistent thermodynamic database for iron to the Earth's core conditions' as yes.",
+      "payload": {
+        "candidate_id": "e765e8817982",
+        "decision": "yes"
+      }
+    },
+    {
+      "event_id": "evt_a2eb13dd77",
+      "event_type": "project_created",
+      "timestamp": "2026-07-01T12:30:36.397472Z",
+      "message": "Created project 'test8'.",
+      "payload": {}
+    }
+  ]
+}

@@ -1,5 +1,5 @@
-
 import httpx
+import time
 from hashlib import sha1
 from app.models import Candidate
 
@@ -7,26 +7,35 @@ BASE_URL = "https://api.openalex.org/works"
 
 class OpenAlexProvider:
     def search(self, query: str, limit: int):
-        try:
-            params = {
-                "search": query,
-                "per_page": limit
-            }
-            r = httpx.get(BASE_URL, params=params, timeout=10)
-            r.raise_for_status()
-            data = r.json()
-        except Exception:
-            raise RuntimeError("OpenAlex request failed")
+        params = {
+            "search": query,
+            "per_page": limit
+        }
 
+        for attempt in range(3):
+            try:
+                r = httpx.get(BASE_URL, params=params, timeout=10)
+                if r.status_code == 429:
+                    time.sleep(1.5 * (attempt + 1))
+                    continue
+                r.raise_for_status()
+                break
+            except Exception:
+                if attempt == 2:
+                    return []
+                time.sleep(1.0 * (attempt + 1))
+
+        data = r.json()
         results = []
+
         for item in data.get("results", []):
             doi = item.get("doi")
             title = item.get("title", "")
             authors = [a.get("author", {}).get("display_name", "") for a in item.get("authorships", [])]
             journal = item.get("host_venue", {}).get("display_name", "")
             year = item.get("publication_year")
-            abstract = item.get("abstract_inverted_index")
 
+            abstract = item.get("abstract_inverted_index")
             abstract_text = ""
             if isinstance(abstract, dict):
                 words = sorted(((pos, word) for word, positions in abstract.items() for pos in positions))
@@ -46,4 +55,5 @@ class OpenAlexProvider:
                 reasons=[],
                 keywords=[]
             ))
+
         return results

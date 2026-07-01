@@ -1,5 +1,5 @@
 LIVE PROJECT CONTEXT
-Generated: 2026-07-01T12:09:37.715163+00:00
+Generated: 2026-07-01T12:37:27.552237+00:00
 Repository root: /Users/fwilson/Documents/Data/litmap_slim
 ===== PROJECT INTENT =====
 
@@ -119,7 +119,7 @@ That means the context pack is tuned for LLM handoff rather than raw archival co
 ===== GIT SNAPSHOT =====
 
 Branch: main
-Commit: 114ed63fe5d4fad42faf3c479dcbb20940e84275
+Commit: f4072acb04b3a34eddee08f2405d594b307b9e61
 
 Status:
 D .venv/lib/python3.9/site-packages/__pycache__/py.cpython-39.pyc
@@ -227,7 +227,6 @@ D .venv/lib/python3.9/site-packages/__pycache__/py.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/anyio/streams/__pycache__/memory.cpython-39-pytest-8.4.2.pyc
  D .venv/lib/python3.9/site-packages/anyio/streams/__pycache__/stapled.cpython-39-pytest-8.4.2.pyc
  D .venv/lib/python3.9/site-packages/anyio/streams/__pycache__/tls.cpython-39-pytest-8.4.2.pyc
- M .venv/lib/python3.9/site-packages/click/__pycache__/_compat.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/click/__pycache__/types.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/fastapi/__pycache__/testclient.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/fastapi/__pycache__/utils.cpython-39.pyc
@@ -258,6 +257,14 @@ D .venv/lib/python3.9/site-packages/__pycache__/py.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/pydantic/_internal/__pycache__/_fields.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/pydantic/_internal/__pycache__/_known_annotated_metadata.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/pydantic/_internal/__pycache__/_schema_gather.cpython-39.pyc
+ M .venv/lib/python3.9/site-packages/pydantic/v1/__pycache__/class_validators.cpython-39.pyc
+ M .venv/lib/python3.9/site-packages/pydantic/v1/__pycache__/color.cpython-39.pyc
+ M .venv/lib/python3.9/site-packages/pydantic/v1/__pycache__/main.cpython-39.pyc
+ M .venv/lib/python3.9/site-packages/pydantic/v1/__pycache__/networks.cpython-39.pyc
+ M .venv/lib/python3.9/site-packages/pydantic/v1/__pycache__/schema.cpython-39.pyc
+ M .venv/lib/python3.9/site-packages/pydantic/v1/__pycache__/types.cpython-39.pyc
+ M .venv/lib/python3.9/site-packages/pydantic/v1/__pycache__/utils.cpython-39.pyc
+ M .venv/lib/python3.9/site-packages/pydantic/v1/__pycache__/validators.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/pygments/__pycache__/console.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/pygments/__pycache__/filter.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/pygments/__pycache__/formatter.cpython-39.pyc
@@ -282,32 +289,60 @@ D .venv/lib/python3.9/site-packages/__pycache__/py.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/tomli/__pycache__/_parser.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/tomli/__pycache__/_re.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/typing_inspection/__pycache__/introspection.cpython-39.pyc
- M app/__pycache__/models.cpython-39.pyc
- M app/models.py
+ M app/__pycache__/search.cpython-39.pyc
+ D app/providers/__pycache__/mock.cpython-39.pyc
+ M app/providers/__pycache__/openalex.cpython-39.pyc
+ M app/providers/__pycache__/semantic_scholar.cpython-39.pyc
+ M app/providers/openalex.py
+ M app/providers/semantic_scholar.py
+ M app/search.py
+ D fix_batch.zip
+ D litmap_full_fix_batch.zip
  M scripts/__pycache__/_context_common.cpython-39.pyc
  D tests/__pycache__/conftest.cpython-39-pytest-8.4.2.pyc
  D tests/__pycache__/test_app.cpython-39-pytest-8.4.2.pyc
  D tests/__pycache__/test_store.cpython-39-pytest-8.4.2.pyc
  D tests/__pycache__/test_tools.cpython-39-pytest-8.4.2.pyc
-?? .venv/lib/python3.9/site-packages/anyio/_backends/__pycache__/__init__.cpython-39.pyc
-?? .venv/lib/python3.9/site-packages/anyio/_backends/__pycache__/_asyncio.cpython-39.pyc
-?? .venv/lib/python3.9/site-packages/certifi/__pycache__/
-?? .venv/lib/python3.9/site-packages/httpcore/__pycache__/
-?? .venv/lib/python3.9/site-packages/httpcore/_async/__pycache__/
-?? .venv/lib/python3.9/site-packages/httpcore/_backends/__pycache__/
-?? .venv/lib/python3.9/site-packages/httpcore/_sync/__pycache__/
-?? .venv/lib/python3.9/site-packages/pydantic/v1/__pycache__/
-?? app/__pycache__/search.cpython-39.pyc
-?? app/__pycache__/store.cpython-39.pyc
-?? app/providers/__pycache__/
-?? data/projects/test5.json
-?? data/projects/test6.json
-?? litmap_full_fix_batch.zip
+?? app/providers/__pycache__/crossref.cpython-39.pyc
+?? app/providers/crossref.py
+?? data/projects/test7.json
+?? data/projects/test8.json
+?? litmap_batch21.zip
 
 ===== AUTOMATED CHECKS =====
 
-Return code: 0
-........                                                                 [100%]
+Return code: 1
+.F......                                                                 [100%]
+=================================== FAILURES ===================================
+________________________ test_create_project_and_search ________________________
+
+client = <starlette.testclient.TestClient object at 0x7fcc38695b80>
+
+    def test_create_project_and_search(client) -> None:
+        response = client.post('/projects', data={'title': 'Core map', 'description': 'testing'})
+        assert response.status_code == 200
+        assert 'Core map' in response.text
+    
+        response = client.post('/projects/core-map/search', data={'query': 'conductivity', 'limit': 5})
+        assert response.status_code == 200
+>       assert 'Thermal and electrical conductivity' in response.text
+E       assert 'Thermal and electrical conductivity' in '<div hx-swap-oob="innerHTML:#project-list">\n  <section class="card project-list" id="project-list">\n  <h2>Projects<...9;Core map&#39;.</strong><small>01 Jul 2026 12:37:29</small></div>\n        \n      </div>\n    </section>\n  </div>\n'
+E        +  where '<div hx-swap-oob="innerHTML:#project-list">\n  <section class="card project-list" id="project-list">\n  <h2>Projects<...9;Core map&#39;.</strong><small>01 Jul 2026 12:37:29</small></div>\n        \n      </div>\n    </section>\n  </div>\n' = <Response [200 OK]>.text
+
+tests/test_app.py:21: AssertionError
+----------------------------- Captured stdout call -----------------------------
+>>> CrossrefProvider
+>>>   variant: 'conductivity' → 5 results
+>>>   variant: '"conductivity"' → 5 results
+>>> SemanticScholarProvider
+>>>   variant: 'conductivity' → 0 results
+>>>   variant: '"conductivity"' → 0 results
+>>> OpenAlexProvider
+>>>   variant: 'conductivity' → 0 results
+>>>   variant: '"conductivity"' → 0 results
+>>> total merged results: 5
+=========================== short test summary info ============================
+FAILED tests/test_app.py::test_create_project_and_search - assert 'Thermal an...
 
 ===== REPOSITORY TREE =====
 
@@ -320,6 +355,7 @@ Return code: 0
   - models.py
   - providers/
     - base.py
+    - crossref.py
     - mock.py
     - openalex.py
     - semantic_scholar.py
@@ -335,8 +371,7 @@ Return code: 0
       - workspace.html
       - workspace_bundle.html
 - first_statup.txt
-- fix_batch.zip
-- litmap_full_fix_batch.zip
+- litmap_batch21.zip
 - litmap_slim.egg-info/
   - PKG-INFO
   - SOURCES.txt
@@ -372,10 +407,11 @@ Return code: 0
 - app/main.py (5627 bytes) [priority]
 - app/models.py (5853 bytes) [priority]
 - app/providers/base.py (219 bytes)
+- app/providers/crossref.py (1624 bytes)
 - app/providers/mock.py (1644 bytes)
-- app/providers/openalex.py (1666 bytes)
-- app/providers/semantic_scholar.py (1505 bytes)
-- app/search.py (831 bytes) [priority]
+- app/providers/openalex.py (1906 bytes)
+- app/providers/semantic_scholar.py (1775 bytes)
+- app/search.py (2509 bytes) [priority]
 - app/static/app.css (5402 bytes)
 - app/static/app.js (180 bytes)
 - app/store.py (5826 bytes) [priority]

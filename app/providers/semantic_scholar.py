@@ -1,5 +1,5 @@
-
 import httpx
+import time
 from hashlib import sha1
 from typing import List
 from app.models import Candidate
@@ -14,11 +14,22 @@ class SemanticScholarProvider:
             "fields": "title,authors,year,venue,abstract,externalIds"
         }
 
-        r = httpx.get(API_URL, params=params, timeout=10)
-        r.raise_for_status()
-        data = r.json()
+        for attempt in range(3):
+            try:
+                r = httpx.get(API_URL, params=params, timeout=10)
+                if r.status_code == 429:
+                    time.sleep(1.5 * (attempt + 1))
+                    continue
+                r.raise_for_status()
+                break
+            except Exception:
+                if attempt == 2:
+                    return []
+                time.sleep(1.0 * (attempt + 1))
 
+        data = r.json()
         results = []
+
         for item in data.get("data", []):
             title = item.get("title", "")
             authors = [a.get("name", "") for a in item.get("authors", [])]
@@ -43,8 +54,5 @@ class SemanticScholarProvider:
                 reasons=[],
                 keywords=[]
             ))
-
-        if len(results) < 3:
-            raise RuntimeError("SemanticScholar weak results")
 
         return results
