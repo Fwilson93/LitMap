@@ -8,15 +8,15 @@ Max file bytes: 80000
 README.md | size=1825 bytes [priority]
 app/__init__.py | size=0 bytes
 app/config.py | size=709 bytes
-app/expand.py | size=1221 bytes
+app/expand.py | size=1921 bytes
 app/graph.py | size=4091 bytes [priority]
-app/main.py | size=5139 bytes [priority]
-app/models.py | size=4507 bytes [priority]
+app/main.py | size=4710 bytes [priority]
+app/models.py | size=4569 bytes [priority]
 app/providers/base.py | size=219 bytes
 app/providers/crossref.py | size=1624 bytes
 app/providers/mock.py | size=9 bytes
 app/providers/openalex.py | size=1637 bytes
-app/providers/semantic_scholar.py | size=1742 bytes
+app/providers/semantic_scholar.py | size=1008 bytes
 app/search.py | size=4184 bytes [priority]
 app/static/app.css | size=5402 bytes
 app/static/app.js | size=180 bytes
@@ -171,53 +171,64 @@ def get_settings() -> Settings:
 ===== FILE: app/expand.py =====
 
 Path: app/expand.py
-Size: 1221 bytes
+Size: 1921 bytes
 ```py
-from app.providers.crossref import CrossrefProvider
+from app.providers.semantic_scholar import SemanticScholarProvider
 from app.providers.openalex import OpenAlexProvider
+from app.providers.crossref import CrossrefProvider
 from app.models import ExpansionCandidate, Candidate
 
-crossref = CrossrefProvider()
+ss = SemanticScholarProvider()
 openalex = OpenAlexProvider()
+crossref = CrossrefProvider()
 
+def expand_from_candidate(candidate: Candidate, limit:int=8):
+    results=[]
+    seen=set()
 
-def expand_from_candidate(candidate: Candidate, limit: int = 6):
-    results = []
+    # --- REAL citations ---
+    graph = ss.fetch_graph(candidate.doi) if candidate.doi else {}
 
-    # --- attempt citation-like using DOI first ---
-    query = candidate.doi if candidate.doi else candidate.title
-    try:
-        citation_results = crossref.search(query, limit)
-    except Exception:
-        citation_results = []
+    for section, stype in [("references","citation"),("citations","citation")]:
+        for item in graph.get(section,[])[:limit]:
+            c = ss.to_candidate(item)
+            key = c.doi or c.title
+            if key in seen: continue
+            seen.add(key)
+            results.append(ExpansionCandidate(
+                candidate_id=f"exp-{c.candidate_id}",
+                title=c.title,
+                source=candidate.candidate_id,
+                source_type="citation"
+            ))
 
-    # --- author expansion ---
-    author_results = []
+    # --- AUTHOR expansion ---
     if candidate.authors:
-        try:
-            author_results = openalex.search(candidate.authors[0], max(2, limit//2))
-        except Exception:
-            author_results = []
+        for r in openalex.search(candidate.authors[0], limit//2):
+            key = r.doi or r.title
+            if key in seen: continue
+            seen.add(key)
+            results.append(ExpansionCandidate(
+                candidate_id=f"exp-{r.candidate_id}",
+                title=r.title,
+                source=candidate.candidate_id,
+                source_type="author"
+            ))
 
-    combined = citation_results + author_results
+    # --- fallback ---
+    if not results:
+        for r in crossref.search(candidate.title, limit):
+            key = r.doi or r.title
+            if key in seen: continue
+            seen.add(key)
+            results.append(ExpansionCandidate(
+                candidate_id=f"exp-{r.candidate_id}",
+                title=r.title,
+                source=candidate.candidate_id,
+                source_type="fallback"
+            ))
 
-    seen = set()
-    for r in combined:
-        key = (r.doi or r.title.lower())
-        if key in seen:
-            continue
-        seen.add(key)
-
-        results.append(ExpansionCandidate(
-            candidate_id=f"exp-{r.candidate_id}",
-            title=r.title,
-            source=candidate.candidate_id
-        ))
-
-        if len(results) >= limit:
-            break
-
-    return results
+    return results[:limit]
 ```
 
 ===== FILE: app/graph.py =====
@@ -322,11 +333,12 @@ def render_graph_svg(graph: Graph, selected_candidate_id: Optional[str] = None) 
 ===== FILE: app/main.py =====
 
 Path: app/main.py
-Size: 5139 bytes
+Size: 4710 bytes
 ```py
 from __future__ import annotations
 from pathlib import Path
 from typing import Optional
+import httpx
 from fastapi import FastAPI, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -338,151 +350,103 @@ from app.models import Decision, Graph
 from app.search import run_search
 from app.store import ProjectStore
 from app.expand import expand_from_candidate
+from app.providers.semantic_scholar import SemanticScholarProvider
 
-settings = get_settings()
-store = ProjectStore(settings.projects_dir, settings.library_dir, settings.exports_dir)
-app = FastAPI(title=settings.app_name)
+settings=get_settings()
+store=ProjectStore(settings.projects_dir,settings.library_dir,settings.exports_dir)
+app=FastAPI(title=settings.app_name)
 
-app.mount("/static", StaticFiles(directory=Path(__file__).resolve().parent / "static"), name="static")
-templates = Jinja2Templates(directory=str(Path(__file__).resolve().parent / "templates"))
+app.mount("/static",StaticFiles(directory=Path(__file__).resolve().parent/"static"),name="static")
+templates=Jinja2Templates(directory=str(Path(__file__).resolve().parent/"templates"))
+ss=SemanticScholarProvider()
 
 
-def _ctx(pid: Optional[str] = None, scid: Optional[str] = None, mode: str = "map"):
-    projects = store.list_projects()
-    project = store.get(pid) if pid else (projects[0] if projects else None)
-
-    selected = None
-    retrieval = []
-
-    if project:
-        retrieval = store.retrieval_items(project)
+def _ctx(pid:Optional[str]=None, scid:Optional[str]=None, mode:str="map"):
+    ps=store.list_projects()
+    p=store.get(pid) if pid else (ps[0] if ps else None)
+    sc=None; r=[]
+    if p:
+        r=store.retrieval_items(p)
         if scid:
-            try:
-                selected = project.get_candidate(scid)
-            except KeyError:
-                selected = project.candidates[0] if project.candidates else None
-        elif project.candidates:
-            selected = project.candidates[0]
+            try: sc=p.get_candidate(scid)
+            except: sc=p.candidates[0] if p.candidates else None
+        elif p.candidates: sc=p.candidates[0]
+    g=render_graph_svg(p.graph if p else Graph(), scid)
+    return {"request":None,"projects":ps,"project":p,"selected_candidate":sc,"retrieval_items":r,"graph_svg":g,"mode":mode}
 
-    graph_svg = render_graph_svg(project.graph if project else Graph(), scid)
+def _resp(req,ctx): ctx["request"]=req; return templates.TemplateResponse(req,"partials/workspace_bundle.html",ctx)
 
-    return {
-        "request": None,
-        "projects": projects,
-        "project": project,
-        "selected_candidate": selected,
-        "retrieval_items": retrieval,
-        "graph_svg": graph_svg,
-        "mode": mode,
-        "export_dir": None,
-    }
+@app.get("/",response_class=HTMLResponse)
+def index(request:Request): return templates.TemplateResponse(request,"page.html",{**_ctx(),"request":request})
 
+@app.post("/projects",response_class=HTMLResponse)
+def create(request:Request,title:str=Form(...),description:str=Form("")):
+    p=store.create_project(title,description); return _resp(request,_ctx(p.project_id))
 
-def _resp(req, ctx):
-    ctx["request"] = req
-    return templates.TemplateResponse(req, "partials/workspace_bundle.html", ctx)
+@app.get("/projects/{pid}/workspace",response_class=HTMLResponse)
+def workspace(request:Request,pid:str,mode:str="map"): return _resp(request,_ctx(pid,mode=mode))
 
+@app.get("/projects/{pid}/retrieval",response_class=HTMLResponse)
+def retrieval(request:Request,pid:str): return _resp(request,_ctx(pid,mode="retrieval"))
 
-@app.get("/", response_class=HTMLResponse)
-def index(request: Request):
-    return templates.TemplateResponse(request, "page.html", {**_ctx(), "request": request})
+@app.post("/projects/{pid}/search",response_class=HTMLResponse)
+def search(request:Request,pid:str,query:str=Form(...),limit:int=Form(8)):
+    p=store.get(pid); res=run_search(query,limit)
+    p.replace_candidates(res,query); store.save(p)
+    return _resp(request,_ctx(pid,p.candidates[0].candidate_id if p.candidates else None))
 
-
-@app.post("/projects", response_class=HTMLResponse)
-def create(request: Request, title: str = Form(...), description: str = Form("")):
-    p = store.create_project(title, description)
-    return _resp(request, _ctx(p.project_id))
-
-
-@app.get("/projects/{pid}/workspace", response_class=HTMLResponse)
-def workspace(request: Request, pid: str, mode: str = "map"):
-    return _resp(request, _ctx(pid, mode=mode))
-
-
-@app.get("/projects/{pid}/retrieval", response_class=HTMLResponse)
-def retrieval_view(request: Request, pid: str):
-    return _resp(request, _ctx(pid, mode="retrieval"))
-
-
-@app.post("/projects/{pid}/search", response_class=HTMLResponse)
-def search(request: Request, pid: str, query: str = Form(...), limit: int = Form(8)):
-    p = store.get(pid)
-    res = run_search(query, limit)
-    p.replace_candidates(res, query)
-    store.save(p)
-    focus = p.candidates[0].candidate_id if p.candidates else None
-    return _resp(request, _ctx(pid, focus))
-
-
-@app.post("/projects/{pid}/candidates/{cid}/decision", response_class=HTMLResponse)
-def decide(request: Request, pid: str, cid: str, decision: str = Form(...)):
-    p = store.get(pid)
-    try:
-        d = Decision(decision)
-    except ValueError:
-        raise HTTPException(400, "Invalid decision")
-
-    c = p.set_decision(cid, d)
-
-    if d == Decision.YES:
-        update_graph_for_candidate(p, c)
+@app.post("/projects/{pid}/candidates/{cid}/decision",response_class=HTMLResponse)
+def decide(request:Request,pid:str,cid:str,decision:str=Form(...)):
+    p=store.get(pid); d=Decision(decision)
+    c=p.set_decision(cid,d)
+    if d==Decision.YES:
+        update_graph_for_candidate(p,c)
         p.add_expansion(expand_from_candidate(c))
+    store.save(p); return _resp(request,_ctx(pid,cid))
 
-    store.save(p)
-    return _resp(request, _ctx(pid, cid))
+@app.post("/projects/{pid}/expand/{cid}/accept",response_class=HTMLResponse)
+def expand_accept(request:Request,pid:str,cid:str):
+    p=store.get(pid); p.expansion_candidates=[x for x in p.expansion_candidates if x.candidate_id!=cid]
+    store.save(p); return _resp(request,_ctx(pid))
 
+@app.post("/projects/{pid}/expand/{cid}/ignore",response_class=HTMLResponse)
+def expand_ignore(request:Request,pid:str,cid:str):
+    p=store.get(pid); p.expansion_candidates=[x for x in p.expansion_candidates if x.candidate_id!=cid]
+    store.save(p); return _resp(request,_ctx(pid))
 
-@app.post("/projects/{pid}/expand/{cid}/accept", response_class=HTMLResponse)
-def expand_accept(request: Request, pid: str, cid: str):
-    p = store.get(pid)
-    p.expansion_candidates = [x for x in p.expansion_candidates if x.candidate_id != cid]
-    store.save(p)
-    return _resp(request, _ctx(pid))
+@app.post("/projects/{pid}/expand/{cid}/blacklist",response_class=HTMLResponse)
+def expand_blacklist(request:Request,pid:str,cid:str):
+    p=store.get(pid); p.blacklist_item(cid); store.save(p)
+    return _resp(request,_ctx(pid))
 
-
-@app.post("/projects/{pid}/expand/{cid}/ignore", response_class=HTMLResponse)
-def expand_ignore(request: Request, pid: str, cid: str):
-    p = store.get(pid)
-    p.expansion_candidates = [x for x in p.expansion_candidates if x.candidate_id != cid]
-    store.save(p)
-    return _resp(request, _ctx(pid))
-
-
-@app.post("/projects/{pid}/expand/{cid}/blacklist", response_class=HTMLResponse)
-def expand_blacklist(request: Request, pid: str, cid: str):
-    p = store.get(pid)
-    p.blacklist_item(cid)
-    store.save(p)
-    return _resp(request, _ctx(pid))
-
-
-# ✅ Batch 7.1: file-based retrieval simulation
-@app.post("/projects/{pid}/retrieval/auto", response_class=HTMLResponse)
-def retrieval_auto(request: Request, pid: str):
-    p = store.get(pid)
-
-    lib = settings.library_dir
-    lib.mkdir(parents=True, exist_ok=True)
+# REAL PDF RETRIEVAL
+@app.post("/projects/{pid}/retrieval/auto",response_class=HTMLResponse)
+def retrieval_auto(request:Request,pid:str):
+    p=store.get(pid); lib=settings.library_dir; lib.mkdir(parents=True,exist_ok=True)
 
     for c in p.candidates:
-        if c.doi and not c.local_pdf_present:
-            fname = f"{c.candidate_id}.pdf"
-            fpath = lib / fname
+        if not c.doi or c.local_pdf_present:
+            continue
+        meta=ss.fetch_graph(c.doi)
+        pdf=(meta.get("openAccessPdf") or {}).get("url")
+        if not pdf:
+            continue
+        try:
+            r=httpx.get(pdf,timeout=15)
+            r.raise_for_status()
+            fpath=lib/f"{c.candidate_id}.pdf"
+            with open(fpath,"wb") as f: f.write(r.content)
+            c.local_pdf_present=True; c.local_pdf_path=str(fpath)
+        except Exception:
+            continue
 
-            # simulate download → write placeholder PDF
-            fpath.write_text(f"PDF placeholder for DOI: {c.doi}")
-
-            c.local_pdf_present = True
-            c.local_pdf_path = str(fpath)
-
-    store.save(p)
-    return _resp(request, _ctx(pid, mode="retrieval"))
+    store.save(p); return _resp(request,_ctx(pid,mode="retrieval"))
 ```
 
 ===== FILE: app/models.py =====
 
 Path: app/models.py
-Size: 4507 bytes
+Size: 4569 bytes
 ```py
 from __future__ import annotations
 from datetime import datetime, timezone
@@ -548,6 +512,7 @@ class RetrievalItem(BaseModel):
 
 class ExpansionCandidate(BaseModel):
     candidate_id:str; title:str; source:str
+    source_type:str="unknown"  # citation | author | fallback
 
 class Project(BaseModel):
     project_id:str; title:str; description:str=""; search_query:str=""
@@ -751,66 +716,41 @@ class OpenAlexProvider:
 ===== FILE: app/providers/semantic_scholar.py =====
 
 Path: app/providers/semantic_scholar.py
-Size: 1742 bytes
+Size: 1008 bytes
 ```py
 import httpx
-import time
-from hashlib import sha1
-from typing import List
 from app.models import Candidate
 
-API_URL = "https://api.semanticscholar.org/graph/v1/paper/search"
+API = "https://api.semanticscholar.org/graph/v1/paper/"
 
 class SemanticScholarProvider:
-    def search(self, query: str, limit: int) -> List[Candidate]:
-        params = {
-            "query": query,
-            "limit": limit,
-            "fields": "title,authors,year,venue,abstract,externalIds"
-        }
 
-        for attempt in range(2):
-            try:
-                r = httpx.get(API_URL, params=params, timeout=4)
-                if r.status_code == 429:
-                    time.sleep(1.0)
-                    continue
-                r.raise_for_status()
-                break
-            except Exception:
-                if attempt == 1:
-                    return []
-                time.sleep(0.5)
+    def fetch_graph(self, doi: str):
+        if not doi:
+            return {}
+        url = API + f"{doi}"
+        params = {"fields": "title,authors,year,venue,externalIds,references,citations,openAccessPdf"}
+        try:
+            r = httpx.get(url, params=params, timeout=10)
+            r.raise_for_status()
+            return r.json()
+        except Exception:
+            return {}
 
-        data = r.json()
-        results = []
-
-        for item in data.get("data", []):
-            title = item.get("title", "")
-            authors = [a.get("name", "") for a in item.get("authors", [])]
-            year = item.get("year")
-            journal = item.get("venue", "")
-            abstract = item.get("abstract", "") or ""
-
-            ext = item.get("externalIds") or {}
-            doi = ext.get("DOI") if isinstance(ext, dict) else None
-
-            identity = doi or title
-            cid = sha1(identity.encode("utf-8")).hexdigest()[:12]
-
-            results.append(Candidate(
-                candidate_id=cid,
-                title=title,
-                authors=authors,
-                journal=journal,
-                year=year,
-                doi=doi,
-                abstract=abstract,
-                reasons=[],
-                keywords=[]
-            ))
-
-        return results
+    def to_candidate(self, item):
+        title = item.get("title", "")
+        authors = [a.get("name", "") for a in item.get("authors", [])]
+        year = item.get("year")
+        journal = item.get("venue", "")
+        doi = (item.get("externalIds") or {}).get("DOI")
+        return Candidate(
+            candidate_id=(doi or title)[:12],
+            title=title,
+            authors=authors,
+            journal=journal,
+            year=year,
+            doi=doi
+        )
 ```
 
 ===== FILE: app/search.py =====

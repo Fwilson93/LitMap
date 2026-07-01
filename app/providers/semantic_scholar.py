@@ -1,58 +1,33 @@
 import httpx
-import time
-from hashlib import sha1
-from typing import List
 from app.models import Candidate
 
-API_URL = "https://api.semanticscholar.org/graph/v1/paper/search"
+API = "https://api.semanticscholar.org/graph/v1/paper/"
 
 class SemanticScholarProvider:
-    def search(self, query: str, limit: int) -> List[Candidate]:
-        params = {
-            "query": query,
-            "limit": limit,
-            "fields": "title,authors,year,venue,abstract,externalIds"
-        }
 
-        for attempt in range(2):
-            try:
-                r = httpx.get(API_URL, params=params, timeout=4)
-                if r.status_code == 429:
-                    time.sleep(1.0)
-                    continue
-                r.raise_for_status()
-                break
-            except Exception:
-                if attempt == 1:
-                    return []
-                time.sleep(0.5)
+    def fetch_graph(self, doi: str):
+        if not doi:
+            return {}
+        url = API + f"{doi}"
+        params = {"fields": "title,authors,year,venue,externalIds,references,citations,openAccessPdf"}
+        try:
+            r = httpx.get(url, params=params, timeout=10)
+            r.raise_for_status()
+            return r.json()
+        except Exception:
+            return {}
 
-        data = r.json()
-        results = []
-
-        for item in data.get("data", []):
-            title = item.get("title", "")
-            authors = [a.get("name", "") for a in item.get("authors", [])]
-            year = item.get("year")
-            journal = item.get("venue", "")
-            abstract = item.get("abstract", "") or ""
-
-            ext = item.get("externalIds") or {}
-            doi = ext.get("DOI") if isinstance(ext, dict) else None
-
-            identity = doi or title
-            cid = sha1(identity.encode("utf-8")).hexdigest()[:12]
-
-            results.append(Candidate(
-                candidate_id=cid,
-                title=title,
-                authors=authors,
-                journal=journal,
-                year=year,
-                doi=doi,
-                abstract=abstract,
-                reasons=[],
-                keywords=[]
-            ))
-
-        return results
+    def to_candidate(self, item):
+        title = item.get("title", "")
+        authors = [a.get("name", "") for a in item.get("authors", [])]
+        year = item.get("year")
+        journal = item.get("venue", "")
+        doi = (item.get("externalIds") or {}).get("DOI")
+        return Candidate(
+            candidate_id=(doi or title)[:12],
+            title=title,
+            authors=authors,
+            journal=journal,
+            year=year,
+            doi=doi
+        )

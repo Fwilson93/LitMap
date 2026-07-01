@@ -62,6 +62,7 @@ class RetrievalItem(BaseModel):
 
 class ExpansionCandidate(BaseModel):
     candidate_id:str; title:str; source:str
+    source_type:str="unknown"  # citation | author | fallback
 
 class Project(BaseModel):
     project_id:str; title:str; description:str=""; search_query:str=""

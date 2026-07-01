@@ -1,5 +1,5 @@
 LIVE PROJECT CONTEXT
-Generated: 2026-07-01T14:33:15.717090+00:00
+Generated: 2026-07-01T15:36:15.272523+00:00
 Repository root: /Users/fwilson/Documents/Data/litmap_slim
 ===== PROJECT INTENT =====
 
@@ -130,13 +130,15 @@ uvicorn app.main:app --reload
 ===== GIT SNAPSHOT =====
 
 Branch: main
-Commit: 72cc69b19dd04fbffab574764e46802c1a70b6c6
+Commit: 9ad629631c0374be6203f8032e1c873c2567957a
 
 Status:
 M app/expand.py
  M app/main.py
- D litmap_batch6_1_and_7.zip
-?? litmap_batch6_2_7_1.zip
+ M app/models.py
+ M app/providers/semantic_scholar.py
+ D litmap_batch6_2_7_1.zip
+?? litmap_final_production_batch.zip
 
 ===== AUTOMATED CHECKS =====
 
@@ -171,7 +173,7 @@ Return code: 0
       - workspace.html
       - workspace_bundle.html
 - first_statup.txt
-- litmap_batch6_2_7_1.zip
+- litmap_final_production_batch.zip
 - litmap_slim.egg-info/
   - PKG-INFO
   - SOURCES.txt
@@ -203,15 +205,15 @@ Return code: 0
 - README.md (1825 bytes) [priority]
 - app/__init__.py (0 bytes)
 - app/config.py (709 bytes)
-- app/expand.py (1221 bytes)
+- app/expand.py (1921 bytes)
 - app/graph.py (4091 bytes) [priority]
-- app/main.py (5139 bytes) [priority]
-- app/models.py (4507 bytes) [priority]
+- app/main.py (4710 bytes) [priority]
+- app/models.py (4569 bytes) [priority]
 - app/providers/base.py (219 bytes)
 - app/providers/crossref.py (1624 bytes)
 - app/providers/mock.py (9 bytes)
 - app/providers/openalex.py (1637 bytes)
-- app/providers/semantic_scholar.py (1742 bytes)
+- app/providers/semantic_scholar.py (1008 bytes)
 - app/search.py (4184 bytes) [priority]
 - app/static/app.css (5402 bytes)
 - app/static/app.js (180 bytes)
