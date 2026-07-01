@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ app_name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='app.css') }}">
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <script defer src="{{ url_for('static', path='app.js') }}"></script>
+  </head>
+  <body>
+    <div class="shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <p class="eyebrow">Local-first literature map</p>
+          <h1>{{ app_name }}</h1>
+          <p class="muted">Search, review, map, retrieve, export.</p>
+        </div>
+        {% include 'partials/project_list.html' %}
+        <section class="card create-project">
+          <h2>New project</h2>
+          <form hx-post="/projects" hx-target="#workspace" hx-swap="innerHTML">
+            <label>Title<input type="text" name="title" placeholder="Core transport map" required></label>
+            <label>Description<textarea name="description" rows="3" placeholder="Optional scope notes"></textarea></label>
+            <button class="btn btn-primary" type="submit">Create project</button>
+          </form>
+        </section>
+      </aside>
+      <main id="workspace" class="workspace">
+        {% include 'partials/workspace.html' %}
+      </main>
+    </div>
+  </body>
+</html>

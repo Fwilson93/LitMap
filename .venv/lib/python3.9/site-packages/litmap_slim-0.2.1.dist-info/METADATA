@@ -1,0 +1,13 @@
+Metadata-Version: 2.4
+Name: litmap-slim
+Version: 0.2.1
+Summary: Slim local-first literature mapping with FastAPI, Jinja2, HTMX, and compact context tooling
+Requires-Python: >=3.9
+Requires-Dist: fastapi<1.0,>=0.111
+Requires-Dist: uvicorn<1.0,>=0.30
+Requires-Dist: jinja2<4.0,>=3.1
+Requires-Dist: python-multipart<1.0,>=0.0.9
+Requires-Dist: pydantic<3.0,>=2.7
+Provides-Extra: dev
+Requires-Dist: pytest<9.0,>=8.2; extra == "dev"
+Requires-Dist: httpx<1.0,>=0.27; extra == "dev"

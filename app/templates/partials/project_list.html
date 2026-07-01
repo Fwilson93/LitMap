@@ -1,0 +1,15 @@
+<section class="card project-list" id="project-list">
+  <h2>Projects</h2>
+  {% if projects %}
+    <div class="stack compact">
+      {% for item in projects %}
+        <button class="project-pill {% if project and item.project_id == project.project_id %}project-pill--active{% endif %}" hx-get="/projects/{{ item.project_id }}/workspace" hx-target="#workspace" hx-swap="innerHTML">
+          <span>{{ item.title }}</span>
+          <small>{{ item.updated_at.strftime('%d %b %Y %H:%M') }}</small>
+        </button>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="muted">Create a project to start your first map.</p>
+  {% endif %}
+</section>
