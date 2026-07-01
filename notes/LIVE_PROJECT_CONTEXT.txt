@@ -1,5 +1,5 @@
 LIVE PROJECT CONTEXT
-Generated: 2026-07-01T09:17:50.298596+00:00
+Generated: 2026-07-01T10:33:44.728106+00:00
 Repository root: /Users/fwilson/Documents/Data/litmap_slim
 ===== PROJECT INTENT =====
 
@@ -119,16 +119,75 @@ That means the context pack is tuned for LLM handoff rather than raw archival co
 ===== GIT SNAPSHOT =====
 
 Branch: main
-Commit: 09a717f93b774e6f0bdf6e51163178768e7f9430
+Commit: 341e0200943a5c67ca41c097fc202ab6467bf3ec
 
 Status:
-D litmap_launcher_patch.zip
-?? update.sh
+M app/search.py
+?? app/providers/
 
 ===== AUTOMATED CHECKS =====
 
-Return code: 0
-........                                                                 [100%]
+Return code: 1
+EEE.....                                                                 [100%]
+==================================== ERRORS ====================================
+______________________ ERROR at setup of test_index_loads ______________________
+
+tmp_path = PosixPath('/private/var/folders/0c/744fr1ys6s5_l2rtcdlvzpfw0000gn/T/pytest-of-fwilson/pytest-16/test_index_loads0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7fb4a03ac040>
+
+    @pytest.fixture()
+    def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> TestClient:
+        monkeypatch.setenv('LITMAP_DATA_DIR', str(tmp_path / 'data'))
+        monkeypatch.setenv('LITMAP_CONTEXT_SKIP_TESTS', '1')
+        import app.config
+>       import app.main
+
+tests/conftest.py:15: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+app/main.py:14: in <module>
+    from app.search import run_search
+app/search.py:3: in <module>
+    from app.providers.mock import MockProvider
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+>   from app.search import CATALOGUE
+E   ImportError: cannot import name 'CATALOGUE' from partially initialized module 'app.search' (most likely due to a circular import) (/Users/fwilson/Documents/Data/litmap_slim/app/search.py)
+
+app/providers/mock.py:2: ImportError
+_______________ ERROR at setup of test_create_project_and_search _______________
+
+tmp_path = PosixPath('/private/var/folders/0c/744fr1ys6s5_l2rtcdlvzpfw0000gn/T/pytest-of-fwilson/pytest-16/test_create_project_and_search0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7fb4a046f9d0>
+
+    @pytest.fixture()
+    def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> TestClient:
+        monkeypatch.setenv('LITMAP_DATA_DIR', str(tmp_path / 'data'))
+        monkeypatch.setenv('LITMAP_CONTEXT_SKIP_TESTS', '1')
+        import app.config
+>       import app.main
+
+tests/conftest.py:15: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+app/main.py:14: in <module>
+    from app.search import run_search
+app/search.py:3: in <module>
+    from app.providers.mock import MockProvider
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+>   from app.search import CATALOGUE
+E   ImportError: cannot import name 'CATALOGUE' from partially initialized module 'app.search' (most likely due to a circular import) (/Users/fwilson/Documents/Data/litmap_slim/app/search.py)
+
+app/providers/mock.py:2: ImportError
+________________ ERROR at setup of test_accept_scan_and_export _________________
+
+tmp_path = PosixPath('/private/var/folders/0c/744fr1ys6s5_l2rtcdlvzpfw0000gn/T/pytest-of-fwilson/pytest-16/test_accept_scan_and_export0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7fb4a04553a0>
+
+    @pytest.fixture()
+    def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> TestClient:
+        monkeypatch.setenv('LITMAP_DATA_DIR', str(tmp_path / 'data'))
+        monkeypatch.setenv('LITMAP_C
+...[trimmed]
 
 ===== REPOSITORY TREE =====
 
@@ -139,6 +198,10 @@ Return code: 0
   - graph.py
   - main.py
   - models.py
+  - providers/
+    - base.py
+    - mock.py
+    - openalex.py
   - search.py
   - static/
     - app.css
@@ -185,7 +248,10 @@ Return code: 0
 - app/graph.py (4091 bytes) [priority]
 - app/main.py (5324 bytes) [priority]
 - app/models.py (5051 bytes) [priority]
-- app/search.py (4045 bytes) [priority]
+- app/providers/base.py (219 bytes)
+- app/providers/mock.py (771 bytes)
+- app/providers/openalex.py (1666 bytes)
+- app/search.py (305 bytes) [priority]
 - app/static/app.css (5402 bytes)
 - app/static/app.js (180 bytes)
 - app/store.py (5826 bytes) [priority]
