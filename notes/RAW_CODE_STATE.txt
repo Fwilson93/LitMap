@@ -1,29 +1,30 @@
 RAW CODE STATE
 Repository root: /Users/fwilson/Documents/Data/litmap_slim
-Included text files: 40
+Included text files: 41
 Max file bytes: 80000
 
 ===== FILE MANIFEST =====
 
 README.md | size=1825 bytes [priority]
+README_APPLY_ME.txt | size=318 bytes
 app/__init__.py | size=0 bytes
 app/config.py | size=709 bytes
 app/expand.py | size=1921 bytes
 app/graph.py | size=4091 bytes [priority]
-app/main.py | size=1873 bytes [priority]
-app/models.py | size=1971 bytes [priority]
+app/main.py | size=4611 bytes [priority]
+app/models.py | size=3996 bytes [priority]
 app/providers/base.py | size=219 bytes
 app/providers/crossref.py | size=1624 bytes
 app/providers/mock.py | size=9 bytes
 app/providers/openalex.py | size=1637 bytes
 app/providers/semantic_scholar.py | size=1008 bytes
-app/search.py | size=4184 bytes [priority]
+app/search.py | size=4535 bytes [priority]
 app/static/app.css | size=5402 bytes
 app/static/app.js | size=180 bytes
-app/store.py | size=1192 bytes [priority]
+app/store.py | size=1702 bytes [priority]
 app/templates/page.html | size=1375 bytes
 app/templates/partials/project_list.html | size=648 bytes
-app/templates/partials/workspace.html | size=878 bytes
+app/templates/partials/workspace.html | size=3050 bytes
 app/templates/partials/workspace_bundle.html | size=136 bytes
 first_statup.txt | size=137 bytes
 litmap_slim.egg-info/SOURCES.txt | size=681 bytes
@@ -123,6 +124,28 @@ source .venv/bin/activate
 pip install -e .[dev]
 uvicorn app.main:app --reload
 ```
+```
+
+===== FILE: README_APPLY_ME.txt =====
+
+Path: README_APPLY_ME.txt
+Size: 318 bytes
+```txt
+LitMap Slim safe compatibility fix bundle
+
+Included replacement files:
+- app/main.py
+- app/models.py
+- app/search.py
+- app/store.py
+- app/templates/partials/workspace.html
+
+Copy these files into the repository root, preserving paths.
+Then run:
+  ./run_litmap.sh
+
+Optional verification:
+  .venv/bin/python -m pytest -q
 ```
 
 ===== FILE: app/__init__.py =====
@@ -333,132 +356,303 @@ def render_graph_svg(graph: Graph, selected_candidate_id: Optional[str] = None) 
 ===== FILE: app/main.py =====
 
 Path: app/main.py
-Size: 1873 bytes
+Size: 4611 bytes
 ```py
-from fastapi import FastAPI, Form, UploadFile, File
+from pathlib import Path
+
+from fastapi import FastAPI, File, Form, Request, UploadFile
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from pathlib import Path
-from app.store import ProjectStore
+
 from app.config import get_settings
+from app.search import run_search
+from app.store import ProjectStore
 
-settings=get_settings()
-store=ProjectStore(settings.projects_dir,settings.library_dir,settings.exports_dir)
-app=FastAPI()
+settings = get_settings()
+store = ProjectStore(settings.projects_dir, settings.library_dir, settings.exports_dir)
 
-templates=Jinja2Templates(directory="app/templates")
-app.mount("/static",StaticFiles(directory="app/static"),name="static")
+app = FastAPI()
+templates = Jinja2Templates(directory="app/templates")
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
+
+
+def _workspace_context(project=None, *, query: str = "", search_error: str = ""):
+    projects = store.list_projects()
+    return {
+        "app_name": settings.app_name,
+        "projects": projects,
+        "project": project,
+        "retrieval_items": store.retrieval_items(project) if project else [],
+        "search_query": query,
+        "search_error": search_error,
+    }
+
+
+@app.get("/", response_class=HTMLResponse)
+def index(request: Request):
+    projects = store.list_projects()
+    project = projects[0] if projects else None
+    context = _workspace_context(project)
+    context["request"] = request
+    return templates.TemplateResponse(
+        request=request,
+        name="page.html",
+        context=context,
+    )
+
+
+@app.post("/projects", response_class=HTMLResponse)
+def create_project(request: Request, title: str = Form(...), description: str = Form("")):
+    project = store.create_project(title, description)
+    context = _workspace_context(project)
+    context["request"] = request
+    return templates.TemplateResponse(
+        request=request,
+        name="partials/workspace_bundle.html",
+        context=context,
+    )
+
+
+@app.get("/projects/{pid}/workspace", response_class=HTMLResponse)
+def project_workspace(request: Request, pid: str):
+    project = store.get(pid)
+    context = _workspace_context(project)
+    context["request"] = request
+    return templates.TemplateResponse(
+        request=request,
+        name="partials/workspace_bundle.html",
+        context=context,
+    )
+
+
+@app.post("/projects/{pid}/search", response_class=HTMLResponse)
+def search_project(request: Request, pid: str, query: str = Form(...), limit: int = Form(12)):
+    project = store.get(pid)
+    search_error = ""
+    try:
+        results = run_search(query, limit=limit)
+    except Exception as exc:
+        results = []
+        search_error = f"Search failed: {exc}"
+    project.upsert_candidates(results, query=query)
+    store.save(project)
+    context = _workspace_context(project, query=query, search_error=search_error)
+    context["request"] = request
+    return templates.TemplateResponse(
+        request=request,
+        name="partials/workspace_bundle.html",
+        context=context,
+    )
+
 
 @app.post("/projects/{pid}/upload_pdf")
-def upload_pdf(pid:str,cid:str=Form(...),file:UploadFile=File(...)):
-    p=store.get(pid); lib=settings.library_dir
-    c=p.get_candidate(cid)
-    path=lib/file.filename
-    with open(path,"wb") as f: f.write(file.file.read())
-    c.local_pdf_path=str(path); c.pdf_status="manual"
-    store.save(p); return "ok"
+def upload_pdf(pid: str, cid: str = Form(...), file: UploadFile = File(...)):
+    project = store.get(pid)
+    library_dir = settings.library_dir
+    candidate = project.get_candidate(cid)
+    path = library_dir / Path(file.filename).name
+    with open(path, "wb") as handle:
+        handle.write(file.file.read())
+    candidate.local_pdf_path = str(path)
+    candidate.pdf_status = "manual"
+    store.save(project)
+    return "ok"
+
 
 @app.post("/projects/{pid}/upload_si")
-def upload_si(pid:str,cid:str=Form(...),file:UploadFile=File(...)):
-    p=store.get(pid); lib=settings.library_dir
-    c=p.get_candidate(cid)
-    path=lib/("SI_"+file.filename)
-    with open(path,"wb") as f: f.write(file.file.read())
-    c.local_si_path=str(path); c.si_status="manual"
-    store.save(p); return "ok"
+def upload_si(pid: str, cid: str = Form(...), file: UploadFile = File(...)):
+    project = store.get(pid)
+    library_dir = settings.library_dir
+    candidate = project.get_candidate(cid)
+    path = library_dir / f"SI_{Path(file.filename).name}"
+    with open(path, "wb") as handle:
+        handle.write(file.file.read())
+    candidate.local_si_path = str(path)
+    candidate.si_status = "manual"
+    store.save(project)
+    return "ok"
+
 
 @app.post("/projects/{pid}/export")
-def export_project(pid:str):
-    p=store.get(pid); out=settings.exports_dir/p.project_id
-    out.mkdir(parents=True,exist_ok=True)
-    papers=out/"papers"; papers.mkdir(exist_ok=True)
-
+def export_project(pid: str):
+    project = store.get(pid)
+    output_dir = settings.exports_dir / project.project_id
+    output_dir.mkdir(parents=True, exist_ok=True)
+    papers_dir = output_dir / "papers"
+    papers_dir.mkdir(exist_ok=True)
     import json
+    import shutil
 
-    meta=[]
-    for c in p.candidates:
-        if c.decision!="yes": continue
-        if c.local_pdf_path:
-            import shutil
-            shutil.copy(c.local_pdf_path,papers)
-        meta.append({
-            "title":c.title,
-            "doi":c.doi,
-            "pdf":c.local_pdf_path
-        })
-
-    with open(out/"metadata.json","w") as f: json.dump(meta,f,indent=2)
-
+    metadata = []
+    for candidate in project.candidates:
+        if candidate.decision != "yes":
+            continue
+        if candidate.local_pdf_path:
+            shutil.copy(candidate.local_pdf_path, papers_dir)
+        metadata.append(
+            {
+                "title": candidate.title,
+                "doi": candidate.doi,
+                "pdf": candidate.local_pdf_path,
+            }
+        )
+    with open(output_dir / "metadata.json", "w") as handle:
+        json.dump(metadata, handle, indent=2)
     return "ok"
 ```
 
 ===== FILE: app/models.py =====
 
 Path: app/models.py
-Size: 1971 bytes
+Size: 3996 bytes
 ```py
 from __future__ import annotations
+
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional, Set
+
 from pydantic import BaseModel, Field
 
+
+def utc_now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
 class Decision(str, Enum):
-    UNREVIEWED="unreviewed"; YES="yes"; NO="no"; DEFER="defer"
+    UNREVIEWED = "unreviewed"
+    YES = "yes"
+    NO = "no"
+    DEFER = "defer"
+
 
 class RetrievalStatus(str, Enum):
-    MISSING="missing"; AUTO="auto"; MANUAL="manual"; FAILED="failed"
+    MISSING = "missing"
+    AUTO = "auto"
+    MANUAL = "manual"
+    FAILED = "failed"
+
+
+class NodeType(str, Enum):
+    PAPER = "paper"
+    AUTHOR = "author"
+    TOPIC = "topic"
+
+
+class EdgeType(str, Enum):
+    PAPER_AUTHOR = "paper-author"
+    PAPER_TOPIC = "paper-topic"
+
+
+class GraphNode(BaseModel):
+    node_id: str
+    node_type: NodeType
+    label: str
+
+
+class GraphEdge(BaseModel):
+    edge_id: str
+    edge_type: EdgeType
+    source: str
+    target: str
+    label: str = ""
+
+
+class Graph(BaseModel):
+    nodes: list[GraphNode] = Field(default_factory=list)
+    edges: list[GraphEdge] = Field(default_factory=list)
+
 
 class Candidate(BaseModel):
-    candidate_id:str
-    title:str
-    authors:list[str]=Field(default_factory=list)
-    journal:str=""; year:Optional[int]=None
-    doi:Optional[str]=None
-    decision:Decision=Decision.UNREVIEWED
-
+    candidate_id: str
+    title: str
+    authors: list[str] = Field(default_factory=list)
+    journal: str = ""
+    year: Optional[int] = None
+    doi: Optional[str] = None
+    abstract: str = ""
+    reasons: list[str] = Field(default_factory=list)
+    keywords: list[str] = Field(default_factory=list)
+    decision: Decision = Decision.UNREVIEWED
     pdf_status: RetrievalStatus = RetrievalStatus.MISSING
     local_pdf_path: Optional[str] = None
-
     si_status: RetrievalStatus = RetrievalStatus.MISSING
     local_si_path: Optional[str] = None
 
+
 class ExpansionCandidate(BaseModel):
-    candidate_id:str
-    title:str
-    source:str
-    source_type:str
+    candidate_id: str
+    title: str
+    source: str
+    source_type: str
+
 
 class Project(BaseModel):
-    project_id:str
-    title:str
-    description:str=""
-    candidates:list[Candidate]=Field(default_factory=list)
-    expansion_candidates:list[ExpansionCandidate]=Field(default_factory=list)
-    blacklist:Set[str]=Field(default_factory=set)
+    project_id: str
+    title: str
+    description: str = ""
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(default_factory=utc_now)
+    candidates: list[Candidate] = Field(default_factory=list)
+    expansion_candidates: list[ExpansionCandidate] = Field(default_factory=list)
+    blacklist: Set[str] = Field(default_factory=set)
+    graph: Graph = Field(default_factory=Graph)
 
     @classmethod
-    def create(cls,title:str,description:str=""):
-        return cls(project_id=title.lower().replace(" ","-"), title=title, description=description)
+    def create(cls, title: str, description: str = "") -> "Project":
+        return cls(
+            project_id=title.lower().replace(" ", "-"),
+            title=title,
+            description=description,
+        )
 
-    def upsert_candidates(self,incoming,query:str=""):
-        existing={c.candidate_id:c for c in self.candidates}
-        for i in incoming:
-            existing[i.candidate_id]=i
-        self.candidates=list(existing.values())
+    def touch(self) -> None:
+        self.updated_at = utc_now()
 
-    def get_candidate(self,cid):
-        for c in self.candidates:
-            if c.candidate_id==cid: return c
+    def upsert_candidates(self, incoming, query: str = "") -> None:
+        existing = {c.candidate_id: c for c in self.candidates}
+        merged: dict[str, Candidate] = {}
+        for item in incoming:
+            previous = existing.get(item.candidate_id)
+            if previous is None:
+                merged[item.candidate_id] = item
+                continue
+            merged[item.candidate_id] = item.model_copy(
+                update={
+                    "decision": previous.decision,
+                    "pdf_status": previous.pdf_status,
+                    "local_pdf_path": previous.local_pdf_path,
+                    "si_status": previous.si_status,
+                    "local_si_path": previous.local_si_path,
+                }
+            )
+        for cid, item in existing.items():
+            if cid not in merged:
+                merged[cid] = item
+        self.candidates = list(merged.values())
+        self.touch()
+
+    def get_candidate(self, cid):
+        for candidate in self.candidates:
+            if candidate.candidate_id == cid:
+                return candidate
         raise KeyError(cid)
 
-    def set_decision(self,cid,d:Decision):
-        c=self.get_candidate(cid); c.decision=d; return c
+    def set_decision(self, cid, d: Decision):
+        candidate = self.get_candidate(cid)
+        candidate.decision = d
+        self.touch()
+        return candidate
 
-    def blacklist_item(self,cid):
+    def blacklist_item(self, cid):
         self.blacklist.add(cid)
-        self.expansion_candidates=[c for c in self.expansion_candidates if c.candidate_id!=cid]
+        self.expansion_candidates = [
+            candidate
+            for candidate in self.expansion_candidates
+            if candidate.candidate_id != cid
+        ]
+        self.touch()
 ```
 
 ===== FILE: app/providers/base.py =====
@@ -647,13 +841,15 @@ class SemanticScholarProvider:
 ===== FILE: app/search.py =====
 
 Path: app/search.py
-Size: 4184 bytes
+Size: 4535 bytes
 ```py
+import re
 from typing import List
-from app.providers.semantic_scholar import SemanticScholarProvider
-from app.providers.openalex import OpenAlexProvider
-from app.providers.crossref import CrossrefProvider
+
 from app.models import Candidate
+from app.providers.crossref import CrossrefProvider
+from app.providers.openalex import OpenAlexProvider
+from app.providers.semantic_scholar import SemanticScholarProvider
 
 PROVIDERS = [
     CrossrefProvider(),
@@ -662,39 +858,37 @@ PROVIDERS = [
 ]
 
 STOPWORDS = {"the", "of", "and", "in", "for", "with", "on", "at"}
-
 MAX_VARIANTS = {
     "CrossrefProvider": 2,
     "SemanticScholarProvider": 1,
     "OpenAlexProvider": 1,
 }
 
+
 def normalize_query(q: str) -> str:
     q = q.replace("FeO", "iron oxide")
     q = q.replace("Fe", "iron")
     return q.strip()
 
+
 def generate_query_variants(query: str) -> List[str]:
     q = normalize_query(query)
     variants = [q, f'"{q}"']
-
     tokens = [t for t in q.lower().split() if t not in STOPWORDS]
     if tokens:
         variants.append(" ".join(tokens))
-
     tokens_no_year = [t for t in tokens if not (t.isdigit() and len(t) == 4)]
     if tokens_no_year:
         variants.append(" ".join(tokens_no_year))
-
     seen = set()
     final = []
-    for v in variants:
-        v = v.strip()
-        if v and v not in seen:
-            seen.add(v)
-            final.append(v)
-
+    for variant in variants:
+        variant = variant.strip()
+        if variant and variant not in seen:
+            seen.add(variant)
+            final.append(variant)
     return final
+
 
 def shape_query_for_provider(query: str, provider_name: str) -> str:
     tokens = query.replace('"', '').split()
@@ -703,95 +897,84 @@ def shape_query_for_provider(query: str, provider_name: str) -> str:
         return " ".join(words[::-1])
     return query
 
+
 def safe_provider_search(provider, query: str, limit: int):
-    try:
-        return provider.search(query, limit)
-    except Exception as e:
-        print(f">>> {provider.__class__.__name__} failed: {e}")
+    search_fn = getattr(provider, "search", None)
+    if not callable(search_fn):
+        print(f">>> {provider.__class__.__name__} has no search() method; skipping")
         return []
+    try:
+        return search_fn(query, limit)
+    except Exception as exc:
+        print(f">>> {provider.__class__.__name__} failed: {exc}")
+        return []
+
 
 def merge_results(results: List[Candidate]) -> List[Candidate]:
     by_key = {}
-    for r in results:
-        key = (r.doi or r.title.lower().strip())
+    for result in results:
+        key = result.doi or result.title.lower().strip()
         if key not in by_key:
-            by_key[key] = r
+            by_key[key] = result
     return list(by_key.values())
 
-def score_result(query: str, r: Candidate) -> float:
+
+def score_result(query: str, result: Candidate) -> float:
     score = 0.0
     q = query.lower()
-
-    # title match boost
-    if r.title:
-        title = r.title.lower()
+    if result.title:
+        title = result.title.lower()
         if q in title:
             score += 5.0
-        overlap = sum(1 for t in q.split() if t in title)
+        overlap = sum(1 for token in q.split() if token in title)
         score += overlap * 0.5
-
-    # author hint (very light)
-    if r.authors:
-        for a in r.authors:
-            if any(tok in a.lower() for tok in q.split()):
+    if result.authors:
+        for author in result.authors:
+            if any(token in author.lower() for token in q.split()):
                 score += 1.0
                 break
-
-    # year proximity
-    import re
-    m = re.search(r"(19|20)\d{2}", q)
-    if m and r.year:
+    match = re.search(r"(19|20)\d{2}", q)
+    if match and result.year:
         try:
-            yq = int(m.group())
-            if abs(r.year - yq) <= 1:
+            year_query = int(match.group())
+            if abs(result.year - year_query) <= 1:
                 score += 2.0
-        except:
+        except Exception:
             pass
-
     return score
 
+
 def rank_results(query: str, results: List[Candidate]) -> List[Candidate]:
-    scored = [(score_result(query, r), r) for r in results]
-    scored.sort(key=lambda x: x[0], reverse=True)
-    return [r for _, r in scored]
+    scored = [(score_result(query, result), result) for result in results]
+    scored.sort(key=lambda item: item[0], reverse=True)
+    return [result for _, result in scored]
+
 
 def run_search(query: str, limit: int = 12):
     variants = generate_query_variants(query)
-
     all_results: List[Candidate] = []
-
     for provider in PROVIDERS:
-        pname = provider.__class__.__name__
-        print(f">>> {pname}")
-
-        max_v = MAX_VARIANTS.get(pname, 1)
+        provider_name = provider.__class__.__name__
+        print(f">>> {provider_name}")
+        max_variants = MAX_VARIANTS.get(provider_name, 1)
         provider_success = False
-
-        for v in variants[:max_v]:
-            shaped = shape_query_for_provider(v, pname)
+        for variant in variants[:max_variants]:
+            shaped = shape_query_for_provider(variant, provider_name)
             results = safe_provider_search(provider, shaped, limit)
-
             print(f">>>   variant: '{shaped}' → {len(results)} results")
-
             if results:
                 provider_success = True
-
             all_results.extend(results)
-
             merged_now = merge_results(all_results)
             if len(merged_now) >= limit:
                 ranked = rank_results(query, merged_now)
                 print(f">>> total merged results: {len(ranked)} (early stop)")
                 return ranked[:limit]
-
-        if not provider_success and pname != "CrossrefProvider":
-            print(f">>> skipping further effort on {pname} (no results)")
-
+        if not provider_success and provider_name != "CrossrefProvider":
+            print(f">>> skipping further effort on {provider_name} (no results)")
     merged = merge_results(all_results)
     ranked = rank_results(query, merged)
-
     print(f">>> total merged results: {len(ranked)}")
-
     return ranked[:limit]
 ```
 
@@ -894,9 +1077,8 @@ document.body.addEventListener('htmx:afterSwap', (event) => {
 ===== FILE: app/store.py =====
 
 Path: app/store.py
-Size: 1192 bytes
+Size: 1702 bytes
 ```py
-from pathlib import Path
 from app.models import Project
 
 
@@ -907,31 +1089,43 @@ class ProjectStore:
         self.library_dir = library_dir
         self.library_dir.mkdir(parents=True, exist_ok=True)
         self.exports_dir = exports_dir
+        self.exports_dir.mkdir(parents=True, exist_ok=True)
 
     def path(self, pid):
         return self.projects_dir / f"{pid}.json"
 
     def create_project(self, title, description=""):
-        p = Project.create(title, description)
-        self.save(p)
-        return p
+        project = Project.create(title, description)
+        self.save(project)
+        return project
+
+    def list_projects(self):
+        projects = []
+        for path in sorted(self.projects_dir.glob("*.json")):
+            try:
+                projects.append(Project.model_validate_json(path.read_text()))
+            except Exception:
+                continue
+        projects.sort(key=lambda item: item.updated_at, reverse=True)
+        return projects
 
     def get(self, pid):
         return Project.model_validate_json(self.path(pid).read_text())
 
-    def save(self, p):
-        self.path(p.project_id).write_text(p.model_dump_json())
+    def save(self, project):
+        project.touch()
+        self.path(project.project_id).write_text(project.model_dump_json(indent=2))
 
     def retrieval_items(self, project):
         items = []
-        for c in project.candidates:
+        for candidate in project.candidates:
             items.append(
                 {
-                    "candidate_id": c.candidate_id,
-                    "title": c.title,
-                    "pdf_status": c.pdf_status,
-                    "si_status": c.si_status,
-                    "doi": c.doi,
+                    "candidate_id": candidate.candidate_id,
+                    "title": candidate.title,
+                    "pdf_status": candidate.pdf_status,
+                    "si_status": candidate.si_status,
+                    "doi": candidate.doi,
                 }
             )
         return items
@@ -1003,40 +1197,97 @@ Size: 648 bytes
 ===== FILE: app/templates/partials/workspace.html =====
 
 Path: app/templates/partials/workspace.html
-Size: 878 bytes
+Size: 3050 bytes
 ```html
-<div>
-<h3>Retrieval / Expansion</h3>
-{% for r in retrieval_items %}
-<div>
-<strong>{{ r.title }}</strong>
-<p>PDF: {{ r.pdf_status }} | SI: {{ r.si_status }}</p>
+{% if project %}
+<div class="card">
+  <div class="section-heading">
+    <div>
+      <h2>{{ project.title }}</h2>
+      {% if project.description %}
+      <p class="muted">{{ project.description }}</p>
+      {% endif %}
+    </div>
+    <span class="pill">{{ project.candidates|length }} candidates</span>
+  </div>
 
-<form hx-post="/projects/{{ project.project_id }}/upload_pdf" enctype="multipart/form-data">
-<input type="hidden" name="cid" value="{{ r.candidate_id }}">
-<input type="file" name="file"><button>Upload PDF</button>
-</form>
+  <form class="search-form" hx-post="/projects/{{ project.project_id }}/search" hx-target="#workspace" hx-swap="innerHTML">
+    <label>
+      Search literature
+      <input type="text" name="query" value="{{ search_query or '' }}" placeholder="e.g. iron oxide transport" required>
+    </label>
+    <label>
+      Limit
+      <input type="number" name="limit" value="12" min="1" max="50">
+    </label>
+    <button class="btn btn-primary" type="submit">Search</button>
+  </form>
 
-<form hx-post="/projects/{{ project.project_id }}/upload_si" enctype="multipart/form-data">
-<input type="hidden" name="cid" value="{{ r.candidate_id }}">
-<input type="file" name="file"><button>Upload SI</button>
-</form>
+  {% if search_error %}
+  <div class="export-banner">{{ search_error }}</div>
+  {% endif %}
 
+  {% if project.candidates %}
+  <div class="stack">
+    {% for c in project.candidates %}
+    <div class="candidate-row">
+      <div>
+        <strong>{{ c.title }}</strong>
+        <p>
+          {% if c.authors %}{{ c.authors[:4]|join(', ') }}{% else %}Unknown authors{% endif %}
+          {% if c.year %} · {{ c.year }}{% endif %}
+          {% if c.journal %} · {{ c.journal }}{% endif %}
+        </p>
+        {% if c.doi %}<small>DOI: {{ c.doi }}</small>{% endif %}
+      </div>
+      <span class="decision-badge decision-{{ c.decision.value if c.decision and c.decision.value in ['yes', 'no', 'defer'] else 'defer' }}">
+        {{ c.decision.value if c.decision else 'unreviewed' }}
+      </span>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <h3>No search results yet</h3>
+    <p class="muted">Run a search to populate candidates for this project.</p>
+  </div>
+  {% endif %}
 </div>
-{% endfor %}
 
-<h3>Expansion Queue</h3>
-{% for e in project.expansion_candidates %}
 <div>
-{{ e.title }} <span>[{{ e.source_type }}]</span>
+  <h3>Retrieval / Expansion</h3>
+  {% for r in retrieval_items %}
+  <div class="retrieval-row">
+    <strong>{{ r.title }}</strong>
+    <p>PDF: {{ r.pdf_status }} | SI: {{ r.si_status }}</p>
+    <form hx-post="/projects/{{ project.project_id }}/upload_pdf" enctype="multipart/form-data">
+      <input type="hidden" name="cid" value="{{ r.candidate_id }}">
+      <input type="file" name="file"><button>Upload PDF</button>
+    </form>
+    <form hx-post="/projects/{{ project.project_id }}/upload_si" enctype="multipart/form-data">
+      <input type="hidden" name="cid" value="{{ r.candidate_id }}">
+      <input type="file" name="file"><button>Upload SI</button>
+    </form>
+  </div>
+  {% endfor %}
+  <h3>Expansion Queue</h3>
+  {% for e in project.expansion_candidates %}
+  <div>
+    {{ e.title }} <span>[{{ e.source_type }}]</span>
+  </div>
+  {% else %}
+  <p class="muted">No queued expansion candidates yet.</p>
+  {% endfor %}
+  <form hx-post="/projects/{{ project.project_id }}/export">
+    <button>Export Project</button>
+  </form>
 </div>
-{% endfor %}
-
-<form hx-post="/projects/{{ project.project_id }}/export">
-<button>Export Project</button>
-</form>
-
-</div>
+{% else %}
+<section class="card empty-state">
+  <h2>No project selected</h2>
+  <p class="muted">Create a project from the sidebar to start a local-first literature map.</p>
+</section>
+{% endif %}
 ```
 
 ===== FILE: app/templates/partials/workspace_bundle.html =====

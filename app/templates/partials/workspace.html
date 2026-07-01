@@ -1,32 +1,89 @@
-<div>
-<h3>Retrieval / Expansion</h3>
-{% for r in retrieval_items %}
-<div>
-<strong>{{ r.title }}</strong>
-<p>PDF: {{ r.pdf_status }} | SI: {{ r.si_status }}</p>
+{% if project %}
+<div class="card">
+  <div class="section-heading">
+    <div>
+      <h2>{{ project.title }}</h2>
+      {% if project.description %}
+      <p class="muted">{{ project.description }}</p>
+      {% endif %}
+    </div>
+    <span class="pill">{{ project.candidates|length }} candidates</span>
+  </div>
 
-<form hx-post="/projects/{{ project.project_id }}/upload_pdf" enctype="multipart/form-data">
-<input type="hidden" name="cid" value="{{ r.candidate_id }}">
-<input type="file" name="file"><button>Upload PDF</button>
-</form>
+  <form class="search-form" hx-post="/projects/{{ project.project_id }}/search" hx-target="#workspace" hx-swap="innerHTML">
+    <label>
+      Search literature
+      <input type="text" name="query" value="{{ search_query or '' }}" placeholder="e.g. iron oxide transport" required>
+    </label>
+    <label>
+      Limit
+      <input type="number" name="limit" value="12" min="1" max="50">
+    </label>
+    <button class="btn btn-primary" type="submit">Search</button>
+  </form>
 
-<form hx-post="/projects/{{ project.project_id }}/upload_si" enctype="multipart/form-data">
-<input type="hidden" name="cid" value="{{ r.candidate_id }}">
-<input type="file" name="file"><button>Upload SI</button>
-</form>
+  {% if search_error %}
+  <div class="export-banner">{{ search_error }}</div>
+  {% endif %}
 
+  {% if project.candidates %}
+  <div class="stack">
+    {% for c in project.candidates %}
+    <div class="candidate-row">
+      <div>
+        <strong>{{ c.title }}</strong>
+        <p>
+          {% if c.authors %}{{ c.authors[:4]|join(', ') }}{% else %}Unknown authors{% endif %}
+          {% if c.year %} · {{ c.year }}{% endif %}
+          {% if c.journal %} · {{ c.journal }}{% endif %}
+        </p>
+        {% if c.doi %}<small>DOI: {{ c.doi }}</small>{% endif %}
+      </div>
+      <span class="decision-badge decision-{{ c.decision.value if c.decision and c.decision.value in ['yes', 'no', 'defer'] else 'defer' }}">
+        {{ c.decision.value if c.decision else 'unreviewed' }}
+      </span>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <h3>No search results yet</h3>
+    <p class="muted">Run a search to populate candidates for this project.</p>
+  </div>
+  {% endif %}
 </div>
-{% endfor %}
 
-<h3>Expansion Queue</h3>
-{% for e in project.expansion_candidates %}
 <div>
-{{ e.title }} <span>[{{ e.source_type }}]</span>
+  <h3>Retrieval / Expansion</h3>
+  {% for r in retrieval_items %}
+  <div class="retrieval-row">
+    <strong>{{ r.title }}</strong>
+    <p>PDF: {{ r.pdf_status }} | SI: {{ r.si_status }}</p>
+    <form hx-post="/projects/{{ project.project_id }}/upload_pdf" enctype="multipart/form-data">
+      <input type="hidden" name="cid" value="{{ r.candidate_id }}">
+      <input type="file" name="file"><button>Upload PDF</button>
+    </form>
+    <form hx-post="/projects/{{ project.project_id }}/upload_si" enctype="multipart/form-data">
+      <input type="hidden" name="cid" value="{{ r.candidate_id }}">
+      <input type="file" name="file"><button>Upload SI</button>
+    </form>
+  </div>
+  {% endfor %}
+  <h3>Expansion Queue</h3>
+  {% for e in project.expansion_candidates %}
+  <div>
+    {{ e.title }} <span>[{{ e.source_type }}]</span>
+  </div>
+  {% else %}
+  <p class="muted">No queued expansion candidates yet.</p>
+  {% endfor %}
+  <form hx-post="/projects/{{ project.project_id }}/export">
+    <button>Export Project</button>
+  </form>
 </div>
-{% endfor %}
-
-<form hx-post="/projects/{{ project.project_id }}/export">
-<button>Export Project</button>
-</form>
-
-</div>
+{% else %}
+<section class="card empty-state">
+  <h2>No project selected</h2>
+  <p class="muted">Create a project from the sidebar to start a local-first literature map.</p>
+</section>
+{% endif %}
