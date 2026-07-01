@@ -1,12 +1,14 @@
+
+from app.providers.semantic_scholar import SemanticScholarProvider
 from app.providers.openalex import OpenAlexProvider
 from app.providers.mock import MockProvider
 
 
 def run_search(query: str, limit: int = 12):
-    provider = OpenAlexProvider()
     try:
-        print(">>> Using OpenAlex")
-        return provider.search(query, limit)
+        return SemanticScholarProvider().search(query, limit)
     except Exception as e:
-        print(">>> OpenAlex failed:", e)
-        return MockProvider().search(query, limit)
+        try:
+            return OpenAlexProvider().search(query, limit)
+        except Exception:
+            return MockProvider().search(query, limit)

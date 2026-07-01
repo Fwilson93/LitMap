@@ -1,6 +1,6 @@
 RAW CODE STATE
 Repository root: /Users/fwilson/Documents/Data/litmap_slim
-Included text files: 37
+Included text files: 38
 Max file bytes: 80000
 
 ===== FILE MANIFEST =====
@@ -14,7 +14,8 @@ app/models.py | size=5051 bytes [priority]
 app/providers/base.py | size=219 bytes
 app/providers/mock.py | size=1644 bytes
 app/providers/openalex.py | size=1666 bytes
-app/search.py | size=386 bytes [priority]
+app/providers/semantic_scholar.py | size=1525 bytes
+app/search.py | size=462 bytes [priority]
 app/static/app.css | size=5402 bytes
 app/static/app.js | size=180 bytes
 app/store.py | size=5826 bytes [priority]
@@ -711,23 +712,82 @@ class OpenAlexProvider:
         return results
 ```
 
+===== FILE: app/providers/semantic_scholar.py =====
+
+Path: app/providers/semantic_scholar.py
+Size: 1525 bytes
+```py
+
+import httpx
+from hashlib import sha1
+from app.models import Candidate
+
+API_URL = "https://api.semanticscholar.org/graph/v1/paper/search"
+
+class SemanticScholarProvider:
+    def search(self, query: str, limit: int):
+        params = {
+            "query": query,
+            "limit": limit,
+            "fields": "title,authors,year,venue,abstract,externalIds"
+        }
+        try:
+            r = httpx.get(API_URL, params=params, timeout=10)
+            r.raise_for_status()
+            data = r.json()
+        except Exception as e:
+            raise RuntimeError(f"SemanticScholar request failed: {e}")
+
+        results = []
+        for item in data.get("data", []):
+            title = item.get("title", "")
+            authors = [a.get("name", "") for a in item.get("authors", [])]
+            year = item.get("year")
+            journal = item.get("venue", "")
+            abstract = item.get("abstract", "")
+
+            doi = None
+            ext = item.get("externalIds") or {}
+            if isinstance(ext, dict):
+                doi = ext.get("DOI")
+
+            identity = doi or title
+            cid = sha1(identity.encode("utf-8")).hexdigest()[:12]
+
+            results.append(Candidate(
+                candidate_id=cid,
+                title=title,
+                authors=authors,
+                journal=journal,
+                year=year,
+                doi=doi,
+                abstract=abstract or "",
+                reasons=[],
+                keywords=[]
+            ))
+
+        return results
+```
+
 ===== FILE: app/search.py =====
 
 Path: app/search.py
-Size: 386 bytes
+Size: 462 bytes
 ```py
+
+from app.providers.semantic_scholar import SemanticScholarProvider
 from app.providers.openalex import OpenAlexProvider
 from app.providers.mock import MockProvider
 
 
 def run_search(query: str, limit: int = 12):
-    provider = OpenAlexProvider()
     try:
-        print(">>> Using OpenAlex")
-        return provider.search(query, limit)
+        return SemanticScholarProvider().search(query, limit)
     except Exception as e:
-        print(">>> OpenAlex failed:", e)
-        return MockProvider().search(query, limit)
+        try:
+            return OpenAlexProvider().search(query, limit)
+        except Exception:
+            return MockProvider().search(query, limit)
 ```
 
 ===== FILE: app/static/app.css =====
