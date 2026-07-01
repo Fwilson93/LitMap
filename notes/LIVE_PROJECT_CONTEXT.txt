@@ -1,5 +1,5 @@
 LIVE PROJECT CONTEXT
-Generated: 2026-07-01T13:56:15.482956+00:00
+Generated: 2026-07-01T14:03:49.996992+00:00
 Repository root: /Users/fwilson/Documents/Data/litmap_slim
 ===== PROJECT INTENT =====
 
@@ -130,7 +130,7 @@ uvicorn app.main:app --reload
 ===== GIT SNAPSHOT =====
 
 Branch: main
-Commit: 800037bc23287834af7a59774684f3f3b3b3697d
+Commit: 91082c8aaf16e5e78f38d73656c7b7188c286518
 
 Status:
 D .venv/lib/python3.9/site-packages/__pycache__/py.cpython-39.pyc
@@ -246,10 +246,10 @@ D .venv/lib/python3.9/site-packages/__pycache__/py.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/iniconfig/__pycache__/__init__.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/iniconfig/__pycache__/_parse.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/iniconfig/__pycache__/exceptions.cpython-39.pyc
+ M .venv/lib/python3.9/site-packages/jinja2/__pycache__/environment.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/jinja2/__pycache__/filters.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/jinja2/__pycache__/nodes.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/jinja2/__pycache__/parser.cpython-39.pyc
- M .venv/lib/python3.9/site-packages/jinja2/__pycache__/utils.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/pluggy/__pycache__/__init__.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/pluggy/__pycache__/_callers.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/pluggy/__pycache__/_hooks.cpython-39.pyc
@@ -259,9 +259,7 @@ D .venv/lib/python3.9/site-packages/__pycache__/py.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/pluggy/__pycache__/_version.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/pluggy/__pycache__/_warnings.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/pydantic/__pycache__/_migration.cpython-39.pyc
- M .venv/lib/python3.9/site-packages/pydantic/__pycache__/fields.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/pydantic/__pycache__/json_schema.cpython-39.pyc
- M .venv/lib/python3.9/site-packages/pydantic/__pycache__/types.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/pydantic/__pycache__/version.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/pydantic/_internal/__pycache__/_config.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/pydantic/_internal/__pycache__/_core_utils.cpython-39.pyc
@@ -271,6 +269,7 @@ D .venv/lib/python3.9/site-packages/__pycache__/py.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/pydantic/_internal/__pycache__/_known_annotated_metadata.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/pydantic/_internal/__pycache__/_schema_gather.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/pydantic/v1/__pycache__/class_validators.cpython-39.pyc
+ M .venv/lib/python3.9/site-packages/pydantic/v1/__pycache__/color.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/pydantic/v1/__pycache__/main.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/pydantic/v1/__pycache__/networks.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/pydantic/v1/__pycache__/schema.cpython-39.pyc
@@ -303,19 +302,19 @@ D .venv/lib/python3.9/site-packages/__pycache__/py.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/typing_inspection/__pycache__/introspection.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/uvicorn/middleware/__pycache__/proxy_headers.cpython-39.pyc
  M app/__pycache__/main.cpython-39.pyc
- M app/__pycache__/models.cpython-39.pyc
  M app/__pycache__/search.cpython-39.pyc
  M app/main.py
- M app/models.py
  M app/templates/partials/workspace.html
  M data/projects/test0.json
+ D litmap_batch5_2.zip
  M scripts/__pycache__/_context_common.cpython-39.pyc
  D tests/__pycache__/conftest.cpython-39-pytest-8.4.2.pyc
  D tests/__pycache__/test_app.cpython-39-pytest-8.4.2.pyc
  D tests/__pycache__/test_store.cpython-39-pytest-8.4.2.pyc
  D tests/__pycache__/test_tools.cpython-39-pytest-8.4.2.pyc
-?? data/projects/test12.json
-?? litmap_batch5_2.zip
+?? data/projects/test13.json
+?? litmap_batch5_3.zip
+?? litmap_batch5_4.zip
 
 ===== AUTOMATED CHECKS =====
 
@@ -349,7 +348,8 @@ Return code: 0
       - workspace.html
       - workspace_bundle.html
 - first_statup.txt
-- litmap_batch5_2.zip
+- litmap_batch5_3.zip
+- litmap_batch5_4.zip
 - litmap_slim.egg-info/
   - PKG-INFO
   - SOURCES.txt
@@ -382,7 +382,7 @@ Return code: 0
 - app/__init__.py (0 bytes)
 - app/config.py (709 bytes)
 - app/graph.py (4091 bytes) [priority]
-- app/main.py (2967 bytes) [priority]
+- app/main.py (5162 bytes) [priority]
 - app/models.py (4507 bytes) [priority]
 - app/providers/base.py (219 bytes)
 - app/providers/crossref.py (1624 bytes)
@@ -395,7 +395,7 @@ Return code: 0
 - app/store.py (1435 bytes) [priority]
 - app/templates/page.html (1375 bytes)
 - app/templates/partials/project_list.html (648 bytes)
-- app/templates/partials/workspace.html (2294 bytes)
+- app/templates/partials/workspace.html (2582 bytes)
 - app/templates/partials/workspace_bundle.html (136 bytes)
 - first_statup.txt (137 bytes)
 - litmap_slim.egg-info/SOURCES.txt (681 bytes)

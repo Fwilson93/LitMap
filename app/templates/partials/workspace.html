@@ -1,60 +1,77 @@
 {% if project %}
 <section class="workspace-header card hero">
   <div>
-    <p class="eyebrow">Active project</p>
     <h2>{{ project.title }}</h2>
     <p class="muted">{{ project.description or 'No description set.' }}</p>
   </div>
 </section>
 
-<div class="workspace-grid">
-  <section class="card search-card">
-    <div class="section-heading"><h3>Search</h3><span class="pill">live providers</span></div>
+<!-- ✅ MODE SWITCH -->
+<div class="tabs">
+  <a hx-get="/projects/{{ project.project_id }}/workspace" hx-target="#workspace">Map</a>
+  <a hx-get="/projects/{{ project.project_id }}/retrieval" hx-target="#workspace">Retrieval</a>
+</div>
 
-    <form class="search-form" hx-post="/projects/{{ project.project_id }}/search" hx-target="#workspace" hx-swap="innerHTML">
+{% if mode == "map" %}
+<div class="workspace-grid">
+
+  <section class="card">
+    <h3>Search</h3>
+    <form hx-post="/projects/{{ project.project_id }}/search" hx-target="#workspace">
       <input type="text" name="query" required value="{{ project.search_query }}">
-      <input type="number" name="limit" value="8">
-      <button class="btn btn-primary">Search</button>
+      <button>Search</button>
     </form>
 
-    {% if project.candidates %}
-    <div class="stack">
-      {% for c in project.candidates %}
-      <form hx-post="/projects/{{ project.project_id }}/candidates/{{ c.candidate_id }}/select" hx-target="#workspace" hx-swap="innerHTML">
-        <button class="candidate-row {% if selected_candidate and c.candidate_id == selected_candidate.candidate_id %}candidate-row--active{% endif %}" type="submit">
-          <div>
-            <strong>{{ c.title }}</strong>
-            <p>{{ c.authors | join(', ') }}</p>
-            <small>{{ c.journal }} {{ c.year }}</small>
-          </div>
-        </button>
-      </form>
-      {% endfor %}
-    </div>
-    {% else %}
-    <p class="muted">No candidates yet.</p>
-    {% endif %}
+    {% for c in project.candidates %}
+    <form hx-post="/projects/{{ project.project_id }}/candidates/{{ c.candidate_id }}/select" hx-target="#workspace">
+      <button class="candidate-row">{{ c.title }}</button>
+    </form>
+    {% endfor %}
   </section>
 
   <section class="card">
     <h3>Decision</h3>
     {% if selected_candidate %}
       <h4>{{ selected_candidate.title }}</h4>
-      <form hx-post="/projects/{{ project.project_id }}/candidates/{{ selected_candidate.candidate_id }}/decision" hx-target="#workspace" hx-swap="innerHTML">
-        <div class="decision-actions">
-          <button class="btn btn-success" name="decision" value="yes">Accept</button>
-          <button class="btn btn-danger" name="decision" value="no">Reject</button>
-          <button class="btn btn-warning" name="decision" value="defer">Defer</button>
-        </div>
+      <form hx-post="/projects/{{ project.project_id }}/candidates/{{ selected_candidate.candidate_id }}/decision" hx-target="#workspace">
+        <button name="decision" value="yes">Accept</button>
+        <button name="decision" value="no">Reject</button>
+        <button name="decision" value="defer">Defer</button>
       </form>
-    {% else %}
-      <p class="muted">Select a paper</p>
     {% endif %}
   </section>
 
   <section class="card">
-    <h3>Graph</h3>
-    <div class="graph-wrap">{{ graph_svg | safe }}</div>
+    <h3>Expansion Queue</h3>
+    {% for e in project.expansion_candidates %}
+    <div>
+      <strong>{{ e.title }}</strong>
+      <form hx-post="/projects/{{ project.project_id }}/expand/{{ e.candidate_id }}/accept" hx-target="#workspace"><button>Accept</button></form>
+      <form hx-post="/projects/{{ project.project_id }}/expand/{{ e.candidate_id }}/ignore" hx-target="#workspace"><button>Ignore</button></form>
+      <form hx-post="/projects/{{ project.project_id }}/expand/{{ e.candidate_id }}/blacklist" hx-target="#workspace"><button>Blacklist</button></form>
+    </div>
+    {% endfor %}
   </section>
+
 </div>
+{% endif %}
+
+{% if mode == "retrieval" %}
+<div class="card">
+  <h3>Retrieval</h3>
+
+  <form hx-post="/projects/{{ project.project_id }}/retrieval/auto" hx-target="#workspace">
+    <button>Auto Collect</button>
+  </form>
+
+  {% for r in retrieval_items %}
+  <div>
+    <strong>{{ r.title }}</strong>
+    <small>PDF missing: {{ r.pdf_missing }} | SI missing: {{ r.supplement_missing }}</small>
+  </div>
+  {% endfor %}
+
+</div>
+{% endif %}
+
 {% endif %}

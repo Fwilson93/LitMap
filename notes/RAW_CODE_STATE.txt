@@ -9,7 +9,7 @@ README.md | size=1825 bytes [priority]
 app/__init__.py | size=0 bytes
 app/config.py | size=709 bytes
 app/graph.py | size=4091 bytes [priority]
-app/main.py | size=2967 bytes [priority]
+app/main.py | size=5162 bytes [priority]
 app/models.py | size=4507 bytes [priority]
 app/providers/base.py | size=219 bytes
 app/providers/crossref.py | size=1624 bytes
@@ -22,7 +22,7 @@ app/static/app.js | size=180 bytes
 app/store.py | size=1435 bytes [priority]
 app/templates/page.html | size=1375 bytes
 app/templates/partials/project_list.html | size=648 bytes
-app/templates/partials/workspace.html | size=2294 bytes
+app/templates/partials/workspace.html | size=2582 bytes
 app/templates/partials/workspace_bundle.html | size=136 bytes
 first_statup.txt | size=137 bytes
 litmap_slim.egg-info/SOURCES.txt | size=681 bytes
@@ -269,7 +269,7 @@ def render_graph_svg(graph: Graph, selected_candidate_id: Optional[str] = None) 
 ===== FILE: app/main.py =====
 
 Path: app/main.py
-Size: 2967 bytes
+Size: 5162 bytes
 ```py
 from __future__ import annotations
 from pathlib import Path
@@ -278,66 +278,153 @@ from fastapi import FastAPI, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+
 from app.config import get_settings
 from app.graph import render_graph_svg, update_graph_for_candidate
 from app.models import Decision, Graph, ExpansionCandidate
 from app.search import run_search
 from app.store import ProjectStore
 
-settings=get_settings()
-store=ProjectStore(settings.projects_dir,settings.library_dir,settings.exports_dir)
-app=FastAPI(title=settings.app_name)
+settings = get_settings()
+store = ProjectStore(settings.projects_dir, settings.library_dir, settings.exports_dir)
+app = FastAPI(title=settings.app_name)
 
-app.mount("/static",StaticFiles(directory=Path(__file__).resolve().parent/"static"),name="static")
-templates=Jinja2Templates(directory=str(Path(__file__).resolve().parent/"templates"))
+app.mount("/static", StaticFiles(directory=Path(__file__).resolve().parent / "static"), name="static")
+templates = Jinja2Templates(directory=str(Path(__file__).resolve().parent / "templates"))
 
-def _ctx(pid:Optional[str]=None, scid:Optional[str]=None):
-    ps=store.list_projects()
-    p=store.get(pid) if pid else (ps[0] if ps else None)
-    sc=None; r=[]
-    if p:
-        r=store.retrieval_items(p)
+# ✅ mode added (map vs retrieval)
+def _ctx(pid: Optional[str] = None, scid: Optional[str] = None, mode: str = "map"):
+    projects = store.list_projects()
+    project = store.get(pid) if pid else (projects[0] if projects else None)
+
+    selected = None
+    retrieval = []
+
+    if project:
+        retrieval = store.retrieval_items(project)
         if scid:
-            try: sc=p.get_candidate(scid)
-            except: sc=p.candidates[0] if p.candidates else None
-        elif p.candidates: sc=p.candidates[0]
-    g=render_graph_svg(p.graph if p else Graph(), scid)
-    return {"request":None,"projects":ps,"project":p,"selected_candidate":sc,"retrieval_items":r,"graph_svg":g,"export_dir":None}
+            try:
+                selected = project.get_candidate(scid)
+            except KeyError:
+                selected = project.candidates[0] if project.candidates else None
+        elif project.candidates:
+            selected = project.candidates[0]
 
-def _resp(req,ctx): ctx["request"]=req; return templates.TemplateResponse(req,"partials/workspace_bundle.html",ctx)
+    graph_svg = render_graph_svg(project.graph if project else Graph(), scid)
 
-@app.get("/",response_class=HTMLResponse)
-def index(request:Request): return templates.TemplateResponse(request,"page.html",{**_ctx(),"request":request})
+    return {
+        "request": None,
+        "projects": projects,
+        "project": project,
+        "selected_candidate": selected,
+        "retrieval_items": retrieval,
+        "graph_svg": graph_svg,
+        "mode": mode,
+        "export_dir": None,
+    }
 
-@app.post("/projects",response_class=HTMLResponse)
-def create(request:Request,title:str=Form(...),description:str=Form("")):
-    p=store.create_project(title,description)
-    return _resp(request,_ctx(p.project_id))
 
-@app.post("/projects/{pid}/search",response_class=HTMLResponse)
-def search(request:Request,pid:str,query:str=Form(...),limit:int=Form(8)):
-    p=store.get(pid)
-    res=run_search(query,limit)
-    p.replace_candidates(res,query)
+def _resp(req, ctx):
+    ctx["request"] = req
+    return templates.TemplateResponse(req, "partials/workspace_bundle.html", ctx)
+
+
+@app.get("/", response_class=HTMLResponse)
+def index(request: Request):
+    return templates.TemplateResponse(request, "page.html", {**_ctx(), "request": request})
+
+
+@app.get("/projects/{pid}/workspace", response_class=HTMLResponse)
+def workspace(request: Request, pid: str, mode: str = "map"):
+    return _resp(request, _ctx(pid, mode=mode))
+
+
+# ✅ new retrieval mode route
+@app.get("/projects/{pid}/retrieval", response_class=HTMLResponse)
+def retrieval_view(request: Request, pid: str):
+    return _resp(request, _ctx(pid, mode="retrieval"))
+
+
+@app.post("/projects", response_class=HTMLResponse)
+def create(request: Request, title: str = Form(...), description: str = Form("")):
+    p = store.create_project(title, description)
+    return _resp(request, _ctx(p.project_id))
+
+
+@app.post("/projects/{pid}/search", response_class=HTMLResponse)
+def search(request: Request, pid: str, query: str = Form(...), limit: int = Form(8)):
+    p = store.get(pid)
+    res = run_search(query, limit)
+    p.replace_candidates(res, query)
     store.save(p)
-    focus=p.candidates[0].candidate_id if p.candidates else None
-    return _resp(request,_ctx(pid,focus))
 
-@app.post("/projects/{pid}/candidates/{cid}/select",response_class=HTMLResponse)
-def select(request:Request,pid:str,cid:str):
-    return _resp(request,_ctx(pid,cid))
+    focus = p.candidates[0].candidate_id if p.candidates else None
+    return _resp(request, _ctx(pid, focus))
 
-@app.post("/projects/{pid}/candidates/{cid}/decision",response_class=HTMLResponse)
-def decide(request:Request,pid:str,cid:str,decision:str=Form(...),notes:str=Form("")):
-    p=store.get(pid)
-    try: d=Decision(decision)
-    except: raise HTTPException(400,"Invalid decision")
-    c=p.set_decision(cid,d,notes)
-    if d==Decision.YES:
-        update_graph_for_candidate(p,c)
-        p.add_expansion([ExpansionCandidate(candidate_id=f"exp-{cid}",title=f"Related to: {c.title}",source=cid)])
+
+@app.post("/projects/{pid}/candidates/{cid}/select", response_class=HTMLResponse)
+def select(request: Request, pid: str, cid: str):
+    return _resp(request, _ctx(pid, cid))
+
+
+@app.post("/projects/{pid}/candidates/{cid}/decision", response_class=HTMLResponse)
+def decide(request: Request, pid: str, cid: str, decision: str = Form(...), notes: str = Form("")):
+    p = store.get(pid)
+
+    try:
+        d = Decision(decision)
+    except ValueError:
+        raise HTTPException(400, "Invalid decision")
+
+    c = p.set_decision(cid, d, notes)
+
+    if d == Decision.YES:
+        update_graph_for_candidate(p, c)
+
+        p.add_expansion([
+            ExpansionCandidate(
+                candidate_id=f"exp-{cid}",
+                title=f"Related to: {c.title}",
+                source=cid
+            )
+        ])
+
     store.save(p)
-    return _resp(request,_ctx(pid,cid))
+    return _resp(request, _ctx(pid, cid))
+
+
+# expansion actions unchanged
+@app.post("/projects/{pid}/expand/{cid}/accept", response_class=HTMLResponse)
+def expand_accept(request: Request, pid: str, cid: str):
+    p = store.get(pid)
+    p.expansion_candidates = [x for x in p.expansion_candidates if x.candidate_id != cid]
+    store.save(p)
+    return _resp(request, _ctx(pid))
+
+
+@app.post("/projects/{pid}/expand/{cid}/ignore", response_class=HTMLResponse)
+def expand_ignore(request: Request, pid: str, cid: str):
+    p = store.get(pid)
+    p.expansion_candidates = [x for x in p.expansion_candidates if x.candidate_id != cid]
+    store.save(p)
+    return _resp(request, _ctx(pid))
+
+
+@app.post("/projects/{pid}/expand/{cid}/blacklist", response_class=HTMLResponse)
+def expand_blacklist(request: Request, pid: str, cid: str):
+    p = store.get(pid)
+    p.blacklist_item(cid)
+    store.save(p)
+    return _resp(request, _ctx(pid))
+
+
+# ✅ simple auto collect placeholder
+@app.post("/projects/{pid}/retrieval/auto", response_class=HTMLResponse)
+def retrieval_auto(request: Request, pid: str):
+    p = store.get(pid)
+    # placeholder: does nothing yet
+    store.save(p)
+    return _resp(request, _ctx(pid, mode="retrieval"))
 ```
 
 ===== FILE: app/models.py =====
@@ -1039,67 +1126,84 @@ Size: 648 bytes
 ===== FILE: app/templates/partials/workspace.html =====
 
 Path: app/templates/partials/workspace.html
-Size: 2294 bytes
+Size: 2582 bytes
 ```html
 {% if project %}
 <section class="workspace-header card hero">
   <div>
-    <p class="eyebrow">Active project</p>
     <h2>{{ project.title }}</h2>
     <p class="muted">{{ project.description or 'No description set.' }}</p>
   </div>
 </section>
 
-<div class="workspace-grid">
-  <section class="card search-card">
-    <div class="section-heading"><h3>Search</h3><span class="pill">live providers</span></div>
+<!-- ✅ MODE SWITCH -->
+<div class="tabs">
+  <a hx-get="/projects/{{ project.project_id }}/workspace" hx-target="#workspace">Map</a>
+  <a hx-get="/projects/{{ project.project_id }}/retrieval" hx-target="#workspace">Retrieval</a>
+</div>
 
-    <form class="search-form" hx-post="/projects/{{ project.project_id }}/search" hx-target="#workspace" hx-swap="innerHTML">
+{% if mode == "map" %}
+<div class="workspace-grid">
+
+  <section class="card">
+    <h3>Search</h3>
+    <form hx-post="/projects/{{ project.project_id }}/search" hx-target="#workspace">
       <input type="text" name="query" required value="{{ project.search_query }}">
-      <input type="number" name="limit" value="8">
-      <button class="btn btn-primary">Search</button>
+      <button>Search</button>
     </form>
 
-    {% if project.candidates %}
-    <div class="stack">
-      {% for c in project.candidates %}
-      <form hx-post="/projects/{{ project.project_id }}/candidates/{{ c.candidate_id }}/select" hx-target="#workspace" hx-swap="innerHTML">
-        <button class="candidate-row {% if selected_candidate and c.candidate_id == selected_candidate.candidate_id %}candidate-row--active{% endif %}" type="submit">
-          <div>
-            <strong>{{ c.title }}</strong>
-            <p>{{ c.authors | join(', ') }}</p>
-            <small>{{ c.journal }} {{ c.year }}</small>
-          </div>
-        </button>
-      </form>
-      {% endfor %}
-    </div>
-    {% else %}
-    <p class="muted">No candidates yet.</p>
-    {% endif %}
+    {% for c in project.candidates %}
+    <form hx-post="/projects/{{ project.project_id }}/candidates/{{ c.candidate_id }}/select" hx-target="#workspace">
+      <button class="candidate-row">{{ c.title }}</button>
+    </form>
+    {% endfor %}
   </section>
 
   <section class="card">
     <h3>Decision</h3>
     {% if selected_candidate %}
       <h4>{{ selected_candidate.title }}</h4>
-      <form hx-post="/projects/{{ project.project_id }}/candidates/{{ selected_candidate.candidate_id }}/decision" hx-target="#workspace" hx-swap="innerHTML">
-        <div class="decision-actions">
-          <button class="btn btn-success" name="decision" value="yes">Accept</button>
-          <button class="btn btn-danger" name="decision" value="no">Reject</button>
-          <button class="btn btn-warning" name="decision" value="defer">Defer</button>
-        </div>
+      <form hx-post="/projects/{{ project.project_id }}/candidates/{{ selected_candidate.candidate_id }}/decision" hx-target="#workspace">
+        <button name="decision" value="yes">Accept</button>
+        <button name="decision" value="no">Reject</button>
+        <button name="decision" value="defer">Defer</button>
       </form>
-    {% else %}
-      <p class="muted">Select a paper</p>
     {% endif %}
   </section>
 
   <section class="card">
-    <h3>Graph</h3>
-    <div class="graph-wrap">{{ graph_svg | safe }}</div>
+    <h3>Expansion Queue</h3>
+    {% for e in project.expansion_candidates %}
+    <div>
+      <strong>{{ e.title }}</strong>
+      <form hx-post="/projects/{{ project.project_id }}/expand/{{ e.candidate_id }}/accept" hx-target="#workspace"><button>Accept</button></form>
+      <form hx-post="/projects/{{ project.project_id }}/expand/{{ e.candidate_id }}/ignore" hx-target="#workspace"><button>Ignore</button></form>
+      <form hx-post="/projects/{{ project.project_id }}/expand/{{ e.candidate_id }}/blacklist" hx-target="#workspace"><button>Blacklist</button></form>
+    </div>
+    {% endfor %}
   </section>
+
 </div>
+{% endif %}
+
+{% if mode == "retrieval" %}
+<div class="card">
+  <h3>Retrieval</h3>
+
+  <form hx-post="/projects/{{ project.project_id }}/retrieval/auto" hx-target="#workspace">
+    <button>Auto Collect</button>
+  </form>
+
+  {% for r in retrieval_items %}
+  <div>
+    <strong>{{ r.title }}</strong>
+    <small>PDF missing: {{ r.pdf_missing }} | SI missing: {{ r.supplement_missing }}</small>
+  </div>
+  {% endfor %}
+
+</div>
+{% endif %}
+
 {% endif %}
 ```
 
