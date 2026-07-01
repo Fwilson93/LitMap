@@ -19,6 +19,7 @@ app = FastAPI(title=settings.app_name)
 app.mount("/static", StaticFiles(directory=Path(__file__).resolve().parent / "static"), name="static")
 templates = Jinja2Templates(directory=str(Path(__file__).resolve().parent / "templates"))
 
+
 def _ctx(pid: Optional[str] = None, scid: Optional[str] = None, mode: str = "map"):
     projects = store.list_projects()
     project = store.get(pid) if pid else (projects[0] if projects else None)
@@ -60,6 +61,12 @@ def index(request: Request):
     return templates.TemplateResponse(request, "page.html", {**_ctx(), "request": request})
 
 
+@app.post("/projects", response_class=HTMLResponse)
+def create(request: Request, title: str = Form(...), description: str = Form("")):
+    p = store.create_project(title, description)
+    return _resp(request, _ctx(p.project_id))
+
+
 @app.get("/projects/{pid}/workspace", response_class=HTMLResponse)
 def workspace(request: Request, pid: str, mode: str = "map"):
     return _resp(request, _ctx(pid, mode=mode))
@@ -93,8 +100,46 @@ def decide(request: Request, pid: str, cid: str, decision: str = Form(...)):
 
     if d == Decision.YES:
         update_graph_for_candidate(p, c)
-        expansions = expand_from_candidate(c)
-        p.add_expansion(expansions)
+        p.add_expansion(expand_from_candidate(c))
 
     store.save(p)
     return _resp(request, _ctx(pid, cid))
+
+
+# --- expansion queue endpoints (restored) ---
+@app.post("/projects/{pid}/expand/{cid}/accept", response_class=HTMLResponse)
+def expand_accept(request: Request, pid: str, cid: str):
+    p = store.get(pid)
+    p.expansion_candidates = [x for x in p.expansion_candidates if x.candidate_id != cid]
+    store.save(p)
+    return _resp(request, _ctx(pid))
+
+
+@app.post("/projects/{pid}/expand/{cid}/ignore", response_class=HTMLResponse)
+def expand_ignore(request: Request, pid: str, cid: str):
+    p = store.get(pid)
+    p.expansion_candidates = [x for x in p.expansion_candidates if x.candidate_id != cid]
+    store.save(p)
+    return _resp(request, _ctx(pid))
+
+
+@app.post("/projects/{pid}/expand/{cid}/blacklist", response_class=HTMLResponse)
+def expand_blacklist(request: Request, pid: str, cid: str):
+    p = store.get(pid)
+    p.blacklist_item(cid)
+    store.save(p)
+    return _resp(request, _ctx(pid))
+
+
+# --- retrieval: simple DOI-based hint system ---
+@app.post("/projects/{pid}/retrieval/auto", response_class=HTMLResponse)
+def retrieval_auto(request: Request, pid: str):
+    p = store.get(pid)
+
+    for c in p.candidates:
+        if c.doi:
+            # mark as "found" (placeholder for real download)
+            c.local_pdf_present = True
+
+    store.save(p)
+    return _resp(request, _ctx(pid, mode="retrieval"))
