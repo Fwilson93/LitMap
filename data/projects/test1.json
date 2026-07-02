@@ -1,0 +1,236 @@
+{
+  "project_id": "test1",
+  "title": "test1",
+  "description": "",
+  "created_at": "2026-07-02T11:43:53.762855Z",
+  "updated_at": "2026-07-02T11:45:10.516849Z",
+  "candidates": [
+    {
+      "candidate_id": "aea8bcb6f631",
+      "title": "Melting temperatures of the Allende meteorite: implications for a Hadean magma ocean",
+      "authors": [
+        "Carl B. Agee"
+      ],
+      "journal": "Physics of the Earth and Planetary Interiors",
+      "year": 1997,
+      "doi": "10.1016/s0031-9201(96)03230-x",
+      "abstract": "",
+      "reasons": [],
+      "keywords": [],
+      "decision": "yes",
+      "pdf_status": "missing",
+      "local_pdf_path": null,
+      "si_status": "missing",
+      "local_si_path": null
+    },
+    {
+      "candidate_id": "7582de036dac",
+      "title": "Melting and Remelting in a Crystallizing Magma Ocean",
+      "authors": [
+        "Antonio Manjon Cabeza Cordoba",
+        "Maxim D. Ballmer",
+        "Oliver Shorttle"
+      ],
+      "journal": "",
+      "year": null,
+      "doi": "10.5194/egusphere-egu24-19267",
+      "abstract": "",
+      "reasons": [],
+      "keywords": [],
+      "decision": "yes",
+      "pdf_status": "missing",
+      "local_pdf_path": null,
+      "si_status": "missing",
+      "local_si_path": null
+    },
+    {
+      "candidate_id": "332729f6d0b8",
+      "title": "Planetary controls on magma ocean crystallisation, re-melting and overturn",
+      "authors": [
+        "Antonio Manjón-Cabeza Córdoba",
+        "Maxim D. Ballmer",
+        "Oliver Shorttle"
+      ],
+      "journal": "",
+      "year": null,
+      "doi": "10.5194/egusphere-egu26-18147",
+      "abstract": "",
+      "reasons": [],
+      "keywords": [],
+      "decision": "unreviewed",
+      "pdf_status": "missing",
+      "local_pdf_path": null,
+      "si_status": "missing",
+      "local_si_path": null
+    },
+    {
+      "candidate_id": "bb34a8a61f76",
+      "title": "Iron isotopes trace primordial magma ocean cumulates melting in the Earth’s upper mantle",
+      "authors": [
+        "Helen Williams",
+        "Simon Matthews",
+        "Hanika Rizo",
+        "Oliver Shorttle"
+      ],
+      "journal": "Goldschmidt2021 abstracts",
+      "year": 2021,
+      "doi": "10.7185/gold2021.6434",
+      "abstract": "",
+      "reasons": [],
+      "keywords": [],
+      "decision": "unreviewed",
+      "pdf_status": "missing",
+      "local_pdf_path": null,
+      "si_status": "missing",
+      "local_si_path": null
+    },
+    {
+      "candidate_id": "2134448145b4",
+      "title": "Olivines in main-group pallasites: magma-ocean cumulates or partial melting residues?",
+      "authors": [
+        "J.-A. Barrat",
+        "L. Ferrière"
+      ],
+      "journal": "Geochemical Perspectives Letters",
+      "year": 2021,
+      "doi": "10.7185/geochemlet.2103",
+      "abstract": "",
+      "reasons": [],
+      "keywords": [],
+      "decision": "unreviewed",
+      "pdf_status": "missing",
+      "local_pdf_path": null,
+      "si_status": "missing",
+      "local_si_path": null
+    },
+    {
+      "candidate_id": "f178f885ef40",
+      "title": "Thermal Effects of Magma Intrusion on Ocean Temperatures Through Ice Ages, with Particular Reference to Interglacial Events",
+      "authors": [
+        "Brian Catt"
+      ],
+      "journal": "SSRN Electronic Journal",
+      "year": null,
+      "doi": "10.2139/ssrn.3259379",
+      "abstract": "",
+      "reasons": [],
+      "keywords": [],
+      "decision": "unreviewed",
+      "pdf_status": "missing",
+      "local_pdf_path": null,
+      "si_status": "missing",
+      "local_si_path": null
+    },
+    {
+      "candidate_id": "97c6f4254695",
+      "title": "Computing of magma chamber temperatures in rift zones of the World Ocean",
+      "authors": [
+        "A.G Gorshkov",
+        "I.P Lukashevich"
+      ],
+      "journal": "Tectonophysics",
+      "year": 1989,
+      "doi": "10.1016/0040-1951(89)90139-x",
+      "abstract": "",
+      "reasons": [],
+      "keywords": [],
+      "decision": "unreviewed",
+      "pdf_status": "missing",
+      "local_pdf_path": null,
+      "si_status": "missing",
+      "local_si_path": null
+    },
+    {
+      "candidate_id": "7926ed66a108",
+      "title": "",
+      "authors": [],
+      "journal": "",
+      "year": null,
+      "doi": "10.46936/aps-188708/60013260",
+      "abstract": "",
+      "reasons": [],
+      "keywords": [],
+      "decision": "unreviewed",
+      "pdf_status": "missing",
+      "local_pdf_path": null,
+      "si_status": "missing",
+      "local_si_path": null
+    }
+  ],
+  "visible_candidate_ids": [
+    "aea8bcb6f631",
+    "7582de036dac",
+    "332729f6d0b8",
+    "bb34a8a61f76",
+    "2134448145b4",
+    "f178f885ef40",
+    "97c6f4254695",
+    "7926ed66a108"
+  ],
+  "expansion_candidates": [],
+  "blacklist": [],
+  "graph": {
+    "nodes": [
+      {
+        "node_id": "paper:aea8bcb6f631",
+        "node_type": "paper",
+        "label": "Melting temperatures of the Allende meteorite: implications for a Hadean magma ocean"
+      },
+      {
+        "node_id": "author:carl b. agee",
+        "node_type": "author",
+        "label": "Carl B. Agee"
+      },
+      {
+        "node_id": "paper:7582de036dac",
+        "node_type": "paper",
+        "label": "Melting and Remelting in a Crystallizing Magma Ocean"
+      },
+      {
+        "node_id": "author:antonio manjon cabeza cordoba",
+        "node_type": "author",
+        "label": "Antonio Manjon Cabeza Cordoba"
+      },
+      {
+        "node_id": "author:maxim d. ballmer",
+        "node_type": "author",
+        "label": "Maxim D. Ballmer"
+      },
+      {
+        "node_id": "author:oliver shorttle",
+        "node_type": "author",
+        "label": "Oliver Shorttle"
+      }
+    ],
+    "edges": [
+      {
+        "edge_id": "edge:paper:aea8bcb6f631:author:carl b. agee",
+        "edge_type": "paper-author",
+        "source": "paper:aea8bcb6f631",
+        "target": "author:carl b. agee",
+        "label": "author"
+      },
+      {
+        "edge_id": "edge:paper:7582de036dac:author:antonio manjon cabeza cordoba",
+        "edge_type": "paper-author",
+        "source": "paper:7582de036dac",
+        "target": "author:antonio manjon cabeza cordoba",
+        "label": "author"
+      },
+      {
+        "edge_id": "edge:paper:7582de036dac:author:maxim d. ballmer",
+        "edge_type": "paper-author",
+        "source": "paper:7582de036dac",
+        "target": "author:maxim d. ballmer",
+        "label": "author"
+      },
+      {
+        "edge_id": "edge:paper:7582de036dac:author:oliver shorttle",
+        "edge_type": "paper-author",
+        "source": "paper:7582de036dac",
+        "target": "author:oliver shorttle",
+        "label": "author"
+      }
+    ]
+  }
+}

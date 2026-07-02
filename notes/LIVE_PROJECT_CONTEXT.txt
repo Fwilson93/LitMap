@@ -1,5 +1,5 @@
 LIVE PROJECT CONTEXT
-Generated: 2026-07-02T05:48:19.319516+00:00
+Generated: 2026-07-02T11:45:44.023531+00:00
 Repository root: /Users/fwilson/Documents/Data/litmap_slim
 ===== PROJECT INTENT =====
 
@@ -130,7 +130,7 @@ uvicorn app.main:app --reload
 ===== GIT SNAPSHOT =====
 
 Branch: main
-Commit: 471b5b3dc00b110b443dfff2c739deb4cc354417
+Commit: c187cca4948946c469c2536751cf72adafaa6d87
 
 Status:
 D .venv/lib/python3.9/site-packages/__pycache__/py.cpython-39.pyc
@@ -210,7 +210,6 @@ D .venv/lib/python3.9/site-packages/__pycache__/py.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/anyio/__pycache__/to_thread.cpython-39-pytest-8.4.2.pyc
  D .venv/lib/python3.9/site-packages/anyio/_backends/__pycache__/__init__.cpython-39-pytest-8.4.2.pyc
  D .venv/lib/python3.9/site-packages/anyio/_backends/__pycache__/_asyncio.cpython-39-pytest-8.4.2.pyc
- M .venv/lib/python3.9/site-packages/anyio/_backends/__pycache__/_asyncio.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/anyio/_backends/__pycache__/_trio.cpython-39-pytest-8.4.2.pyc
  D .venv/lib/python3.9/site-packages/anyio/_core/__pycache__/__init__.cpython-39-pytest-8.4.2.pyc
  D .venv/lib/python3.9/site-packages/anyio/_core/__pycache__/_contextmanagers.cpython-39-pytest-8.4.2.pyc
@@ -252,7 +251,6 @@ D .venv/lib/python3.9/site-packages/__pycache__/py.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/jinja2/__pycache__/filters.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/jinja2/__pycache__/nodes.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/jinja2/__pycache__/parser.cpython-39.pyc
- M .venv/lib/python3.9/site-packages/jinja2/__pycache__/utils.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/pluggy/__pycache__/__init__.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/pluggy/__pycache__/_callers.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/pluggy/__pycache__/_hooks.cpython-39.pyc
@@ -262,7 +260,6 @@ D .venv/lib/python3.9/site-packages/__pycache__/py.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/pluggy/__pycache__/_version.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/pluggy/__pycache__/_warnings.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/pydantic/__pycache__/_migration.cpython-39.pyc
- M .venv/lib/python3.9/site-packages/pydantic/__pycache__/color.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/pydantic/__pycache__/fields.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/pydantic/__pycache__/json_schema.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/pydantic/__pycache__/types.cpython-39.pyc
@@ -275,8 +272,10 @@ D .venv/lib/python3.9/site-packages/__pycache__/py.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/pydantic/_internal/__pycache__/_known_annotated_metadata.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/pydantic/_internal/__pycache__/_schema_gather.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/pydantic/v1/__pycache__/class_validators.cpython-39.pyc
+ M .venv/lib/python3.9/site-packages/pydantic/v1/__pycache__/main.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/pydantic/v1/__pycache__/networks.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/pydantic/v1/__pycache__/schema.cpython-39.pyc
+ M .venv/lib/python3.9/site-packages/pydantic/v1/__pycache__/types.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/pydantic/v1/__pycache__/utils.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/pydantic/v1/__pycache__/validators.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/pygments/__pycache__/console.cpython-39.pyc
@@ -304,29 +303,35 @@ D .venv/lib/python3.9/site-packages/__pycache__/py.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/tomli/__pycache__/_re.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/typing_inspection/__pycache__/introspection.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/uvicorn/middleware/__pycache__/proxy_headers.cpython-39.pyc
- M README_APPLY_ME.txt
- M app/__pycache__/expand.cpython-39.pyc
- M app/__pycache__/graph.cpython-39.pyc
  M app/__pycache__/main.cpython-39.pyc
+ M app/__pycache__/models.cpython-39.pyc
  M app/__pycache__/search.cpython-39.pyc
- M app/graph.py
  M app/main.py
  M app/static/app.css
  M app/static/app.js
  M app/templates/partials/workspace.html
- M data/projects/test0.json
- D data/projects/test13.json
  M scripts/__pycache__/_context_common.cpython-39.pyc
  D tests/__pycache__/conftest.cpython-39-pytest-8.4.2.pyc
  D tests/__pycache__/test_app.cpython-39-pytest-8.4.2.pyc
  D tests/__pycache__/test_store.cpython-39-pytest-8.4.2.pyc
  D tests/__pycache__/test_tools.cpython-39-pytest-8.4.2.pyc
-?? litmap_slim_status_queue_bundle.zip
+?? css_restore_fix.zip
+?? data/projects/test1.json
+?? workspace_fix.zip
 
 ===== AUTOMATED CHECKS =====
 
 Return code: 0
 .......                                                                  [100%]
+=============================== warnings summary ===============================
+tests/test_app.py::test_index_loads
+tests/test_app.py::test_create_project_and_search
+tests/test_app.py::test_create_project_and_search
+  /Users/fwilson/Documents/Data/litmap_slim/.venv/lib/python3.9/site-packages/starlette/templating.py:162: DeprecationWarning: The `name` is not the first parameter anymore. The first parameter should be the `Request` instance.
+  Replace `TemplateResponse(name, {"request": request})` by `TemplateResponse(request, name)`.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
 
 ===== REPOSITORY TREE =====
 
@@ -356,6 +361,7 @@ Return code: 0
       - project_list.html
       - workspace.html
       - workspace_bundle.html
+- css_restore_fix.zip
 - first_statup.txt
 - litmap_batch_B_final.zip
 - litmap_slim.egg-info/
@@ -388,6 +394,7 @@ Return code: 0
   - test_store.py
   - test_tools.py
 - update.sh
+- workspace_fix.zip
 
 ===== TEXT FILE MANIFEST =====
 
@@ -397,7 +404,7 @@ Return code: 0
 - app/config.py (709 bytes)
 - app/expand.py (2275 bytes)
 - app/graph.py (6532 bytes) [priority]
-- app/main.py (15882 bytes) [priority]
+- app/main.py (7346 bytes) [priority]
 - app/models.py (4837 bytes) [priority]
 - app/providers/base.py (219 bytes)
 - app/providers/crossref.py (1624 bytes)
@@ -405,12 +412,12 @@ Return code: 0
 - app/providers/openalex.py (1637 bytes)
 - app/providers/semantic_scholar.py (1008 bytes)
 - app/search.py (4535 bytes) [priority]
-- app/static/app.css (8774 bytes)
-- app/static/app.js (1546 bytes)
+- app/static/app.css (2146 bytes)
+- app/static/app.js (711 bytes)
 - app/store.py (1872 bytes) [priority]
 - app/templates/page.html (1474 bytes)
 - app/templates/partials/project_list.html (1133 bytes)
-- app/templates/partials/workspace.html (11708 bytes)
+- app/templates/partials/workspace.html (5572 bytes)
 - app/templates/partials/workspace_bundle.html (136 bytes)
 - first_statup.txt (137 bytes)
 - litmap_slim.egg-info/SOURCES.txt (681 bytes)

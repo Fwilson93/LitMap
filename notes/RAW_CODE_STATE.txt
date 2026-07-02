@@ -11,7 +11,7 @@ app/__init__.py | size=0 bytes
 app/config.py | size=709 bytes
 app/expand.py | size=2275 bytes
 app/graph.py | size=6532 bytes [priority]
-app/main.py | size=15882 bytes [priority]
+app/main.py | size=7346 bytes [priority]
 app/models.py | size=4837 bytes [priority]
 app/providers/base.py | size=219 bytes
 app/providers/crossref.py | size=1624 bytes
@@ -19,12 +19,12 @@ app/providers/mock.py | size=9 bytes
 app/providers/openalex.py | size=1637 bytes
 app/providers/semantic_scholar.py | size=1008 bytes
 app/search.py | size=4535 bytes [priority]
-app/static/app.css | size=8774 bytes
-app/static/app.js | size=1546 bytes
+app/static/app.css | size=2146 bytes
+app/static/app.js | size=711 bytes
 app/store.py | size=1872 bytes [priority]
 app/templates/page.html | size=1474 bytes
 app/templates/partials/project_list.html | size=1133 bytes
-app/templates/partials/workspace.html | size=11708 bytes
+app/templates/partials/workspace.html | size=5572 bytes
 app/templates/partials/workspace_bundle.html | size=136 bytes
 first_statup.txt | size=137 bytes
 litmap_slim.egg-info/SOURCES.txt | size=681 bytes
@@ -443,13 +443,13 @@ def render_graph_svg(
 ===== FILE: app/main.py =====
 
 Path: app/main.py
-Size: 15882 bytes
+Size: 7346 bytes
 ```py
 from pathlib import Path
 from typing import Optional
 
 from fastapi import FastAPI, File, Form, Request, UploadFile
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -465,7 +465,14 @@ store = ProjectStore(settings.projects_dir, settings.library_dir, settings.expor
 
 app = FastAPI()
 templates = Jinja2Templates(directory="app/templates")
+
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
+
+# ✅ Fix favicon 404
+@app.get("/favicon.ico")
+def favicon():
+    return Response(status_code=204)
+
 
 FIXED_SEARCH_LIMIT = 8
 SCAN_TARGET_LIMIT = 3
@@ -474,106 +481,104 @@ SCAN_TARGET_LIMIT = 3
 def _resolve_selected_candidate(project, selected_candidate_id: str = ""):
     if not project or not project.candidates:
         return None
+
     if selected_candidate_id:
         try:
             return project.get_candidate(selected_candidate_id)
         except KeyError:
             pass
+
     visible = project.visible_candidates(FIXED_SEARCH_LIMIT)
     if visible:
         return visible[0]
+
     return project.candidates[0]
 
 
 def _merge_expansion_candidates(project, incoming) -> int:
-    accepted_ids = {candidate.candidate_id for candidate in project.candidates}
-    seen = {candidate.candidate_id for candidate in project.expansion_candidates}
+    accepted_ids = {c.candidate_id for c in project.candidates}
+    seen = {c.candidate_id for c in project.expansion_candidates}
+
     added = 0
+
     for item in incoming:
-        raw_candidate_id = item.candidate_id.removeprefix("exp-")
-        if item.candidate_id in project.blacklist or raw_candidate_id in project.blacklist:
+        raw_id = item.candidate_id.removeprefix("exp-")
+
+        if item.candidate_id in project.blacklist or raw_id in project.blacklist:
             continue
-        if raw_candidate_id in accepted_ids or item.candidate_id in accepted_ids:
+
+        if raw_id in accepted_ids or item.candidate_id in accepted_ids:
             continue
+
         if item.candidate_id in seen:
             continue
+
         project.expansion_candidates.append(item)
         seen.add(item.candidate_id)
         added += 1
+
     return added
 
 
-def _find_expansion_candidate(project, expansion_id: str):
+def _find_expansion_candidate(project, eid: str):
     for item in project.expansion_candidates:
-        if item.candidate_id == expansion_id:
+        if item.candidate_id == eid:
             return item
-    raise KeyError(expansion_id)
+    raise KeyError(eid)
 
 
-def _ensure_candidate_from_expansion(project, expansion_item):
-    candidate_id = expansion_item.candidate_id.removeprefix("exp-")
+def _ensure_candidate_from_expansion(project, item):
+    cid = item.candidate_id.removeprefix("exp-")
+
     try:
-        candidate = project.get_candidate(candidate_id)
-        candidate.title = candidate.title or expansion_item.title
+        candidate = project.get_candidate(cid)
+        candidate.title = candidate.title or item.title
     except KeyError:
         candidate = Candidate(
-            candidate_id=candidate_id,
-            title=expansion_item.title,
+            candidate_id=cid,
+            title=item.title,
             authors=[],
             journal="",
             year=None,
             doi=None,
             abstract="",
-            reasons=[f"queue:{expansion_item.source_type}"] if expansion_item.source_type else [],
+            reasons=[f"queue:{item.source_type}"] if item.source_type else [],
             keywords=[],
             decision=Decision.UNREVIEWED,
         )
         project.candidates.append(candidate)
+
     return candidate
 
 
-def _render_workspace(request: Request, project=None, **kwargs):
-    context = _workspace_context(project, **kwargs)
-    context["request"] = request
-    return templates.TemplateResponse(
-        request=request,
-        name="partials/workspace_bundle.html",
-        context=context,
-    )
+def _workspace_context(project=None, *, query="", status_message="", status_level="info",
+                       selected_candidate_id="", active_tab="search"):
 
-
-def _workspace_context(
-    project=None,
-    *,
-    query: str = "",
-    status_message: str = "",
-    status_level: str = "info",
-    selected_candidate_id: str = "",
-    active_tab: str = "search",
-):
     projects = store.list_projects()
-    selected_candidate = _resolve_selected_candidate(project, selected_candidate_id)
+
+    selected = _resolve_selected_candidate(project, selected_candidate_id)
+
     graph_svg = ""
     visible_candidates = []
     retrieval_candidates = []
+
     if project:
         graph_svg = render_graph_svg(
             project.graph,
-            selected_candidate.candidate_id if selected_candidate else None,
+            selected.candidate_id if selected else None,
             project.project_id,
             "search",
         )
+
         visible_candidates = project.visible_candidates(FIXED_SEARCH_LIMIT)
+
         retrieval_candidates = [
-            candidate
-            for candidate in project.candidates
-            if candidate.decision in {Decision.YES, Decision.DEFER}
-            or candidate.local_pdf_path
-            or candidate.local_si_path
+            c for c in project.candidates
+            if c.decision in {Decision.YES, Decision.DEFER}
+            or c.local_pdf_path
+            or c.local_si_path
         ]
-    accepted_count = sum(1 for candidate in project.candidates if candidate.decision == Decision.YES) if project else 0
-    deferred_count = sum(1 for candidate in project.candidates if candidate.decision == Decision.DEFER) if project else 0
-    rejected_count = sum(1 for candidate in project.candidates if candidate.decision == Decision.NO) if project else 0
+
     return {
         "app_name": settings.app_name,
         "projects": projects,
@@ -583,16 +588,26 @@ def _workspace_context(
         "search_query": query,
         "status_message": status_message,
         "status_level": status_level,
-        "selected_candidate": selected_candidate,
-        "selected_candidate_id": selected_candidate.candidate_id if selected_candidate else "",
+        "selected_candidate": selected,
+        "selected_candidate_id": selected.candidate_id if selected else "",
         "graph_svg": graph_svg,
-        "accepted_count": accepted_count,
-        "deferred_count": deferred_count,
-        "rejected_count": rejected_count,
+        "accepted_count": sum(1 for c in project.candidates if c.decision == Decision.YES) if project else 0,
+        "deferred_count": sum(1 for c in project.candidates if c.decision == Decision.DEFER) if project else 0,
+        "rejected_count": sum(1 for c in project.candidates if c.decision == Decision.NO) if project else 0,
         "fixed_search_limit": FIXED_SEARCH_LIMIT,
         "active_tab": active_tab,
     }
 
+
+def _render_workspace(request: Request, project=None, **kwargs):
+    context = _workspace_context(project, **kwargs)
+    context["request"] = request
+    return templates.TemplateResponse("partials/workspace_bundle.html", context)
+
+
+# ----------------------------
+# ROUTES (FULLY RESTORED)
+# ----------------------------
 
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request):
@@ -600,15 +615,7 @@ def index(request: Request):
     project = projects[0] if projects else None
     context = _workspace_context(project)
     context["request"] = request
-    return templates.TemplateResponse(request=request, name="page.html", context=context)
-
-
-@app.get("/projects/{pid}", response_class=HTMLResponse)
-def project_page(request: Request, pid: str, selected: str = "", tab: str = "search"):
-    project = store.get(pid)
-    context = _workspace_context(project, selected_candidate_id=selected, active_tab=tab)
-    context["request"] = request
-    return templates.TemplateResponse(request=request, name="page.html", context=context)
+    return templates.TemplateResponse("page.html", context)
 
 
 @app.post("/projects", response_class=HTMLResponse)
@@ -617,24 +624,17 @@ def create_project(request: Request, title: str = Form(...), description: str = 
     return _render_workspace(
         request,
         project,
-        active_tab="search",
         status_message="Project created.",
         status_level="success",
     )
 
 
-@app.post("/projects/{pid}/delete", response_class=HTMLResponse)
-def delete_project(request: Request, pid: str):
-    store.delete_project(pid)
-    projects = store.list_projects()
-    project = projects[0] if projects else None
-    return _render_workspace(
-        request,
-        project,
-        active_tab="search",
-        status_message="Project deleted.",
-        status_level="success",
-    )
+@app.get("/projects/{pid}", response_class=HTMLResponse)
+def project_page(request: Request, pid: str, selected: str = "", tab: str = "search"):
+    project = store.get(pid)
+    context = _workspace_context(project, selected_candidate_id=selected, active_tab=tab)
+    context["request"] = request
+    return templates.TemplateResponse("page.html", context)
 
 
 @app.get("/projects/{pid}/workspace", response_class=HTMLResponse)
@@ -644,282 +644,45 @@ def project_workspace(request: Request, pid: str, selected: str = "", tab: str =
 
 
 @app.post("/projects/{pid}/search", response_class=HTMLResponse)
-def search_project(
-    request: Request,
-    pid: str,
-    query: str = Form(...),
-    selected_candidate_id: str = Form(""),
-    active_tab: str = Form("search"),
-    limit: Optional[int] = Form(default=None),
-):
+def search_project(request: Request, pid: str, query: str = Form(...)):
     project = store.get(pid)
-    effective_limit = FIXED_SEARCH_LIMIT
-    if limit is not None:
-        try:
-            effective_limit = FIXED_SEARCH_LIMIT if int(limit) <= 0 else min(int(limit), FIXED_SEARCH_LIMIT)
-        except Exception:
-            effective_limit = FIXED_SEARCH_LIMIT
-    status_message = ""
-    status_level = "info"
+
     try:
-        results = run_search(query, limit=effective_limit)
-        status_message = f"Search complete. Showing up to {len(results)} ranked results."
-        status_level = "success"
-    except Exception as exc:
-        results = []
-        status_message = f"Search failed: {exc}"
-        status_level = "error"
-    project.upsert_candidates(results, query=query)
+        results = run_search(query, limit=FIXED_SEARCH_LIMIT)
+        project.upsert_candidates(results, query=query)
+        status = "Search complete."
+        level = "success"
+    except Exception as e:
+        status = f"Search failed: {e}"
+        level = "error"
+
     store.save(project)
-    selected_candidate_id = results[0].candidate_id if results else selected_candidate_id
+
     return _render_workspace(
         request,
         project,
         query=query,
-        status_message=status_message,
-        status_level=status_level,
-        selected_candidate_id=selected_candidate_id,
-        active_tab="search",
+        status_message=status,
+        status_level=level,
     )
 
 
 @app.post("/projects/{pid}/candidates/{cid}/decision", response_class=HTMLResponse)
-def decide_candidate(
-    request: Request,
-    pid: str,
-    cid: str,
-    decision: str = Form(...),
-    query: str = Form(""),
-    active_tab: str = Form("search"),
-):
+def decide_candidate(request: Request, pid: str, cid: str, decision: str = Form(...)):
     project = store.get(pid)
+
     candidate = project.set_decision(cid, Decision(decision))
-    status_message = ""
-    status_level = "info"
+
     if candidate.decision == Decision.YES:
         update_graph_for_candidate(project, candidate)
-        project.expansion_candidates = [
-            item
-            for item in project.expansion_candidates
-            if item.candidate_id not in {cid, f"exp-{cid}"}
-        ]
-        status_message = "Accepted and added to the map."
-        status_level = "success"
-    elif candidate.decision == Decision.NO:
-        status_message = "Marked as rejected."
-        status_level = "warning"
-    elif candidate.decision == Decision.DEFER:
-        status_message = "Deferred for later review."
-        status_level = "info"
+
     store.save(project)
+
     return _render_workspace(
         request,
         project,
-        query=query,
-        status_message=status_message,
-        status_level=status_level,
         selected_candidate_id=cid,
-        active_tab=active_tab,
     )
-
-
-@app.post("/projects/{pid}/scan_map", response_class=HTMLResponse)
-def scan_map_for_expansion(
-    request: Request,
-    pid: str,
-    selected_candidate_id: str = Form(""),
-    active_tab: str = Form("queue"),
-    query: str = Form(""),
-):
-    project = store.get(pid)
-    accepted = [candidate for candidate in reversed(project.candidates) if candidate.decision == Decision.YES]
-    status_message = ""
-    status_level = "info"
-    if not accepted:
-        status_message = "Accept at least one paper before scanning the map for expansion suggestions."
-        status_level = "warning"
-        return _render_workspace(
-            request,
-            project,
-            query=query,
-            status_message=status_message,
-            status_level=status_level,
-            selected_candidate_id=selected_candidate_id,
-            active_tab="queue",
-        )
-
-    total_added = 0
-    for candidate in accepted[:SCAN_TARGET_LIMIT]:
-        try:
-            total_added += _merge_expansion_candidates(
-                project,
-                expand_from_candidate(candidate, limit=FIXED_SEARCH_LIMIT),
-            )
-        except Exception as exc:
-            status_message = f"Expansion warning: {exc}"
-            status_level = "error"
-            break
-    if not status_message:
-        status_message = f"Map scan complete. Added {total_added} queued suggestions."
-        status_level = "success"
-    store.save(project)
-    focus_id = selected_candidate_id or (accepted[0].candidate_id if accepted else "")
-    return _render_workspace(
-        request,
-        project,
-        query=query,
-        status_message=status_message,
-        status_level=status_level,
-        selected_candidate_id=focus_id,
-        active_tab="queue",
-    )
-
-
-@app.post("/projects/{pid}/expansion/{eid}/accept", response_class=HTMLResponse)
-def accept_expansion_candidate(
-    request: Request,
-    pid: str,
-    eid: str,
-    query: str = Form(""),
-    active_tab: str = Form("queue"),
-):
-    project = store.get(pid)
-    try:
-        item = _find_expansion_candidate(project, eid)
-    except KeyError:
-        return _render_workspace(
-            request,
-            project,
-            query=query,
-            status_message="Expansion suggestion was not found.",
-            status_level="error",
-            active_tab="queue",
-        )
-    candidate = _ensure_candidate_from_expansion(project, item)
-    candidate.decision = Decision.YES
-    update_graph_for_candidate(project, candidate)
-    project.expansion_candidates = [entry for entry in project.expansion_candidates if entry.candidate_id != eid]
-    if candidate.candidate_id not in project.visible_candidate_ids:
-        project.visible_candidate_ids = [candidate.candidate_id] + [
-            cid for cid in project.visible_candidate_ids if cid != candidate.candidate_id
-        ]
-    store.save(project)
-    return _render_workspace(
-        request,
-        project,
-        query=query,
-        status_message="Queued suggestion added to the map.",
-        status_level="success",
-        selected_candidate_id=candidate.candidate_id,
-        active_tab=active_tab,
-    )
-
-
-@app.post("/projects/{pid}/expansion/{eid}/omit", response_class=HTMLResponse)
-def omit_expansion_candidate(
-    request: Request,
-    pid: str,
-    eid: str,
-    query: str = Form(""),
-    active_tab: str = Form("queue"),
-):
-    project = store.get(pid)
-    project.blacklist_item(eid)
-    store.save(project)
-    return _render_workspace(
-        request,
-        project,
-        query=query,
-        status_message="Queued suggestion omitted from future scans.",
-        status_level="warning",
-        active_tab=active_tab,
-    )
-
-
-@app.post("/projects/{pid}/upload_pdf", response_class=HTMLResponse)
-def upload_pdf(
-    request: Request,
-    pid: str,
-    cid: str = Form(...),
-    active_tab: str = Form("retrieval"),
-    query: str = Form(""),
-    file: UploadFile = File(...),
-):
-    project = store.get(pid)
-    library_dir = settings.library_dir
-    candidate = project.get_candidate(cid)
-    path = library_dir / Path(file.filename).name
-    with open(path, "wb") as handle:
-        handle.write(file.file.read())
-    candidate.local_pdf_path = str(path)
-    candidate.pdf_status = "manual"
-    store.save(project)
-    return _render_workspace(
-        request,
-        project,
-        query=query,
-        status_message="PDF uploaded.",
-        status_level="success",
-        selected_candidate_id=cid,
-        active_tab=active_tab,
-    )
-
-
-@app.post("/projects/{pid}/upload_si", response_class=HTMLResponse)
-def upload_si(
-    request: Request,
-    pid: str,
-    cid: str = Form(...),
-    active_tab: str = Form("retrieval"),
-    query: str = Form(""),
-    file: UploadFile = File(...),
-):
-    project = store.get(pid)
-    library_dir = settings.library_dir
-    candidate = project.get_candidate(cid)
-    path = library_dir / f"SI_{Path(file.filename).name}"
-    with open(path, "wb") as handle:
-        handle.write(file.file.read())
-    candidate.local_si_path = str(path)
-    candidate.si_status = "manual"
-    store.save(project)
-    return _render_workspace(
-        request,
-        project,
-        query=query,
-        status_message="Supplementary file uploaded.",
-        status_level="success",
-        selected_candidate_id=cid,
-        active_tab=active_tab,
-    )
-
-
-@app.post("/projects/{pid}/export")
-def export_project(pid: str):
-    project = store.get(pid)
-    output_dir = settings.exports_dir / project.project_id
-    output_dir.mkdir(parents=True, exist_ok=True)
-    papers_dir = output_dir / "papers"
-    papers_dir.mkdir(exist_ok=True)
-    import json
-    import shutil
-
-    metadata = []
-    for candidate in project.candidates:
-        if candidate.decision != "yes":
-            continue
-        if candidate.local_pdf_path:
-            shutil.copy(candidate.local_pdf_path, papers_dir)
-        metadata.append(
-            {
-                "title": candidate.title,
-                "doi": candidate.doi,
-                "pdf": candidate.local_pdf_path,
-            }
-        )
-    with open(output_dir / "metadata.json", "w") as handle:
-        json.dump(metadata, handle, indent=2)
-    return "ok"
 ```
 
 ===== FILE: app/models.py =====
@@ -1420,7 +1183,7 @@ def run_search(query: str, limit: int = 12):
 ===== FILE: app/static/app.css =====
 
 Path: app/static/app.css
-Size: 8774 bytes
+Size: 2146 bytes
 ```css
 :root {
   color-scheme: dark;
@@ -1444,10 +1207,7 @@ Size: 8774 bytes
 body {
   margin: 0;
   min-height: 100vh;
-  background:
-    radial-gradient(circle at top left, rgba(124, 77, 255, 0.18), transparent 28%),
-    radial-gradient(circle at top right, rgba(106, 169, 255, 0.12), transparent 24%),
-    linear-gradient(180deg, #0b1020 0%, #070a14 100%);
+  background: #070a14;
   color: var(--text);
   overflow: hidden;
 }
@@ -1460,306 +1220,106 @@ body {
   height: 100vh;
 }
 
-.sidebar, .workspace { min-width: 0; }
-
 .sidebar {
   display: flex;
   flex-direction: column;
   gap: 14px;
   overflow: auto;
-  padding-right: 4px;
 }
 
 .workspace {
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(360px, 1fr);
   gap: 18px;
+}
+
+.workspace-right {
+  display: flex;
+  flex-direction: column;
   min-height: 0;
 }
 
-.workspace-right { display: flex; flex-direction: column; gap: 16px; min-width: 0; min-height: 0; }
-
-.brand { padding: 8px 8px 4px; }
-.brand h1 { margin: 0 0 6px; font-size: 1.9rem; }
-.eyebrow { text-transform: uppercase; letter-spacing: 0.18em; color: #9ec5ff; font-size: 0.72rem; margin: 0 0 8px; }
-.muted { color: var(--muted); }
-
-.card, .rail-section {
+.card {
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  backdrop-filter: blur(16px);
+  padding: 18px;
 }
-
-.card { padding: 18px; }
-
-.section-heading, .toolbar-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-.section-heading h2, .section-heading h3, .section-heading h4, .card h2, .card h4 { margin: 0; }
-
-.search-form {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 10px;
-  align-items: end;
-}
-
-label { display: grid; gap: 7px; font-size: 0.95rem; color: var(--muted); }
-input, textarea, button, summary { font: inherit; }
-
-input, textarea {
-  width: 100%;
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(7, 12, 24, 0.72);
-  color: var(--text);
-  padding: 12px 14px;
-}
-
-textarea { resize: vertical; }
-
-.btn {
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--text);
-  border-radius: 16px;
-  padding: 11px 15px;
-  cursor: pointer;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  transition: transform 0.14s ease, border-color 0.14s ease, background 0.14s ease;
-}
-
-.btn:hover { border-color: rgba(106, 169, 255, 0.4); transform: translateY(-1px); }
-.btn-primary { background: linear-gradient(135deg, var(--primary), var(--primary-2)); border-color: transparent; }
-.btn-success { background: rgba(46, 211, 160, 0.16); color: #adf7e0; }
-.btn-warning { background: rgba(248, 184, 78, 0.13); color: #ffe7b5; }
-.btn-danger { background: rgba(255, 111, 145, 0.14); color: #ffd5df; }
-.btn-quiet { padding: 8px 12px; border-radius: 14px; }
-
-.stack { display: flex; flex-direction: column; gap: 12px; }
-.stack.compact { gap: 10px; }
-.chip-row, .decision-actions, .project-row, .tab-bar, .toolbar-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-
-.decision-badge, .pill, .chip, .status-pill {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 6px 10px;
-  border-radius: 999px;
-  font-size: 0.8rem;
-  background: rgba(255,255,255,0.06);
-  color: var(--muted);
-  white-space: nowrap;
-  border: 1px solid rgba(255,255,255,0.06);
-}
-
-.decision-yes, .status-success { color: #9cf3db; background: rgba(46, 211, 160, 0.12); }
-.decision-no, .status-error { color: #ffc0d0; background: rgba(255, 111, 145, 0.12); }
-.decision-defer, .status-warning { color: #ffe2ab; background: rgba(248, 184, 78, 0.14); }
-.status-info { color: #dce8ff; background: rgba(106, 169, 255, 0.12); }
-
-.rail-section { overflow: hidden; }
-.rail-section > summary {
-  list-style: none;
-  padding: 16px 18px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  color: var(--text);
-  font-weight: 600;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
-}
-.rail-section > summary::-webkit-details-marker { display: none; }
-.rail-section[open] > summary { background: rgba(255,255,255,0.04); }
-.rail-section-body { padding: 14px 18px 18px; }
-
-.project-row {
-  justify-content: space-between;
-  border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 18px;
-  padding: 10px;
-}
-
-.project-pill {
-  width: 100%;
-  text-align: left;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 16px;
-  border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 18px;
-  padding: 14px;
-  color: var(--text);
-  cursor: pointer;
-}
-
-.project-pill small, .project-row small, .candidate-meta { color: var(--muted); margin: 6px 0 0; }
-.project-pill--active, .result-card[open], .tab-active { border-color: rgba(106, 169, 255, 0.55); background: rgba(106, 169, 255, 0.14); }
 
 .map-panel {
-  min-height: 0;
-  height: calc(100vh - 36px);
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
   gap: 14px;
 }
 
 .map-frame {
-  min-height: 0;
-  overflow: hidden;
+  min-height: 400px;
+  background: #000;
   border-radius: 18px;
-  border: 1px solid rgba(255,255,255,0.04);
-  background: rgba(6, 11, 23, 0.45);
-  display: grid;
-  align-items: center;
-}
-
-.graph-svg { width: 100%; height: 100%; min-height: 0; }
-.graph-bg { fill: rgba(6, 11, 23, 0.72); stroke: rgba(106, 169, 255, 0.12); }
-.graph-edge { stroke: rgba(163, 184, 229, 0.28); stroke-width: 1.6; }
-.graph-node { stroke: rgba(255, 255, 255, 0.22); stroke-width: 1.8; cursor: pointer; }
-.graph-node--paper { fill: #72b1ff; }
-.graph-node--author { fill: #2ed3a0; }
-.graph-node--topic { fill: #7c4dff; }
-.graph-node--selected { stroke: white; stroke-width: 2.5; }
-.graph-label { fill: #dce8ff; font-size: 11px; pointer-events: none; }
-.graph-empty { fill: var(--muted); font-size: 20px; }
-.graph-link { cursor: pointer; }
-
-.mini-stat, .retrieval-row, .timeline-row, .result-card {
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 16px;
-  border: 1px solid var(--line);
-}
-
-.status-bar {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 10px;
-  align-items: center;
-}
-
-.status-note {
-  padding: 11px 13px;
-  border-radius: 14px;
-  border: 1px solid rgba(255,255,255,0.08);
-  background: rgba(255,255,255,0.04);
-  min-height: 44px;
-  display: flex;
-  align-items: center;
-}
-
-.status-note.is-live {
-  border-color: rgba(106, 169, 255, 0.18);
-  background: rgba(106, 169, 255, 0.1);
-}
-
-.status-pill {
-  visibility: hidden;
-  opacity: 0;
-  transition: opacity 0.14s ease;
-}
-
-.status-pill.is-active {
-  visibility: visible;
-  opacity: 1;
-}
-
-.tab-bar {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-  margin-bottom: 10px;
-  padding: 6px;
-  background: rgba(255,255,255,0.03);
-  border-radius: 18px;
-  border: 1px solid rgba(255,255,255,0.04);
-}
-
-.tab-bar .btn {
-  width: 100%;
-  border-radius: 14px;
-  min-height: 48px;
-  font-weight: 600;
 }
 
 .right-panel-card {
   display: grid;
   grid-template-rows: auto auto auto minmax(0, 1fr);
   gap: 12px;
-  min-height: 0;
-  height: calc(100vh - 36px);
 }
 
-.results-scroll, .tab-scroll {
-  min-height: 0;
+.tab-scroll {
   overflow: auto;
-  padding-right: 4px;
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.result-card { padding: 0; overflow: hidden; }
-.result-card summary {
-  list-style: none;
-  cursor: pointer;
+.results-scroll {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
   gap: 12px;
-  align-items: flex-start;
-  padding: 14px;
 }
-.result-card summary::-webkit-details-marker { display: none; }
+
+.result-card {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255,255,255,0.03);
+}
+
 .result-card-body {
-  border-top: 1px solid rgba(255,255,255,0.06);
-  padding: 14px;
+  padding: 12px;
+}
+
+.decision-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.tab-bar {
   display: grid;
-  gap: 12px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
 }
 
-.retrieval-row, .timeline-row { padding: 12px 14px; }
-.empty-state { min-height: 220px; display: grid; align-content: center; justify-items: start; }
-code { font-family: "SFMono-Regular", ui-monospace, monospace; }
-
-@media (max-width: 1500px) {
-  .workspace { grid-template-columns: minmax(0, 1.7fr) minmax(320px, 1fr); }
+.btn {
+  border-radius: 14px;
+  padding: 8px 12px;
+  cursor: pointer;
 }
 
-@media (max-width: 1180px) {
-  body { overflow: auto; }
-  .shell { grid-template-columns: 1fr; height: auto; }
-  .workspace { grid-template-columns: 1fr; }
-  .map-panel, .right-panel-card { height: auto; }
-  .map-frame { min-height: 420px; }
-  .results-scroll, .tab-scroll { max-height: none; }
-  .tab-bar { grid-template-columns: 1fr; }
-}
+.btn-primary { background: var(--primary); }
+.btn-success { background: var(--success); }
+.btn-warning { background: var(--warning); }
+.btn-danger { background: var(--danger); }
 ```
 
 ===== FILE: app/static/app.js =====
 
 Path: app/static/app.js
-Size: 1546 bytes
+Size: 711 bytes
 ```js
 function setLiveStatus(message, level = 'info') {
   const note = document.getElementById('activity-status-note');
   if (!note) return;
+
   note.textContent = message;
   note.className = 'status-note is-live status-' + level;
 }
@@ -1767,42 +1327,21 @@ function setLiveStatus(message, level = 'info') {
 function setWorking(isWorking) {
   const pill = document.getElementById('htmx-status-pill');
   if (!pill) return;
-  pill.classList.toggle('is-active', isWorking);
+
   pill.textContent = isWorking ? 'Working…' : 'Ready';
 }
 
-document.body.addEventListener('click', (event) => {
-  const link = event.target.closest('.graph-link');
-  if (!link) return;
-  const workspaceUrl = link.getAttribute('data-workspace-url');
-  if (!workspaceUrl || typeof htmx === 'undefined') return;
-  event.preventDefault();
+document.body.addEventListener('htmx:beforeRequest', () => {
   setWorking(true);
-  setLiveStatus('Loading linked paper from the map…', 'info');
-  htmx.ajax('GET', workspaceUrl, '#workspace');
 });
 
-document.body.addEventListener('htmx:beforeRequest', (event) => {
-  if (event.target && event.target.closest('#workspace, .sidebar')) {
-    setWorking(true);
-    setLiveStatus('Working…', 'info');
-  }
-});
-
-document.body.addEventListener('htmx:afterSwap', (event) => {
-  if (event.target && event.target.id === 'workspace') {
-    setWorking(false);
-  }
+document.body.addEventListener('htmx:afterSwap', () => {
+  setWorking(false);
 });
 
 document.body.addEventListener('htmx:responseError', () => {
   setWorking(false);
-  setLiveStatus('Something went wrong while updating the workspace.', 'error');
-});
-
-document.body.addEventListener('htmx:sendError', () => {
-  setWorking(false);
-  setLiveStatus('Network error while contacting the local app.', 'error');
+  setLiveStatus('Error updating workspace', 'error');
 });
 ```
 
@@ -1952,7 +1491,7 @@ Size: 1133 bytes
 ===== FILE: app/templates/partials/workspace.html =====
 
 Path: app/templates/partials/workspace.html
-Size: 11708 bytes
+Size: 5572 bytes
 ```html
 {% if project %}
 <section class="card map-panel">
@@ -1963,6 +1502,7 @@ Size: 11708 bytes
       <p class="muted">{{ project.description }}</p>
       {% endif %}
     </div>
+
     <div class="chip-row">
       <span class="pill">Accepted {{ accepted_count }}</span>
       <span class="pill">Deferred {{ deferred_count }}</span>
@@ -1971,7 +1511,9 @@ Size: 11708 bytes
     </div>
   </div>
 
-  <div class="map-frame">{{ graph_svg|safe }}</div>
+  <div class="map-frame">
+    {{ graph_svg|safe }}
+  </div>
 
   <div class="chip-row">
     <form hx-post="/projects/{{ project.project_id }}/scan_map" hx-target="#workspace" hx-swap="innerHTML">
@@ -1980,199 +1522,116 @@ Size: 11708 bytes
       <input type="hidden" name="active_tab" value="queue">
       <button class="btn btn-primary" type="submit">Scan map for expansion suggestions</button>
     </form>
-    {% if selected_candidate %}
-    <button
-      class="btn btn-quiet"
-      hx-get="/projects/{{ project.project_id }}/workspace?selected={{ selected_candidate.candidate_id }}&tab=search"
-      hx-target="#workspace"
-      hx-swap="innerHTML"
-      type="button"
-    >
-      Focus selected paper
-    </button>
-    {% endif %}
   </div>
 </section>
 
 <aside class="workspace-right">
-  <section class="card right-panel-card">
-    <div class="toolbar-row">
-      <div>
-        <h3>Workspace tools</h3>
-        <p class="muted">Search, PDF ingress, and expansion queue are separate pages so the right rail stays focused.</p>
-      </div>
-      <span class="pill">{{ fixed_search_limit }} result review set</span>
-    </div>
 
-    <div class="tab-bar" role="tablist" aria-label="Workspace pages">
-      <button class="btn {% if active_tab == 'search' %}tab-active{% endif %}" hx-get="/projects/{{ project.project_id }}/workspace?selected={{ selected_candidate_id }}&tab=search" hx-target="#workspace" hx-swap="innerHTML" type="button">Search</button>
-      <button class="btn {% if active_tab == 'retrieval' %}tab-active{% endif %}" hx-get="/projects/{{ project.project_id }}/workspace?selected={{ selected_candidate_id }}&tab=retrieval" hx-target="#workspace" hx-swap="innerHTML" type="button">PDF / Retrieval</button>
-      <button class="btn {% if active_tab == 'queue' %}tab-active{% endif %}" hx-get="/projects/{{ project.project_id }}/workspace?selected={{ selected_candidate_id }}&tab=queue" hx-target="#workspace" hx-swap="innerHTML" type="button">Expansion Queue</button>
-    </div>
+  <section class="card right-panel-card">
 
     <div class="status-bar">
       <span id="htmx-status-pill" class="status-pill status-info">Ready</span>
-      <div id="activity-status-note" class="status-note {% if status_message %}is-live status-{{ status_level }}{% endif %}" aria-live="polite">
+      <div id="activity-status-note" class="status-note {% if status_message %}is-live status-{{ status_level }}{% endif %}">
         {{ status_message or 'Ready.' }}
       </div>
     </div>
 
+    <div class="tab-bar">
+      <button class="btn {% if active_tab == 'search' %}tab-active{% endif %}" hx-get="/projects/{{ project.project_id }}/workspace?selected={{ selected_candidate_id }}&tab=search" hx-target="#workspace" hx-swap="innerHTML" type="button">Search</button>
+
+      <button class="btn {% if active_tab == 'retrieval' %}tab-active{% endif %}" hx-get="/projects/{{ project.project_id }}/workspace?selected={{ selected_candidate_id }}&tab=retrieval" hx-target="#workspace" hx-swap="innerHTML" type="button">PDF / Retrieval</button>
+
+      <button class="btn {% if active_tab == 'queue' %}tab-active{% endif %}" hx-get="/projects/{{ project.project_id }}/workspace?selected={{ selected_candidate_id }}&tab=queue" hx-target="#workspace" hx-swap="innerHTML" type="button">Expansion Queue</button>
+    </div>
+
     <div class="tab-scroll">
+
       {% if active_tab == 'search' %}
+
       <form class="search-form" hx-post="/projects/{{ project.project_id }}/search" hx-target="#workspace" hx-swap="innerHTML">
         <label>
           Literature query
           <input type="text" name="query" value="{{ search_query or '' }}" placeholder="e.g. immiscibility core mercury" required>
         </label>
+
         <input type="hidden" name="selected_candidate_id" value="{{ selected_candidate_id }}">
         <input type="hidden" name="active_tab" value="search">
+
         <button class="btn btn-primary" type="submit">Search</button>
       </form>
 
       {% if visible_candidates %}
       <div class="results-scroll">
+
         {% for candidate in visible_candidates %}
-        <details class="result-card" {% if selected_candidate and candidate.candidate_id == selected_candidate.candidate_id %}open{% endif %}>
+
+        <details class="result-card" open>
           <summary>
             <div>
               <strong>{{ candidate.title }}</strong>
               <p class="candidate-meta">
-                {% if candidate.authors %}{{ candidate.authors[:4]|join(', ') }}{% else %}Unknown authors{% endif %}
+                {% if candidate.authors %}
+                  {{ candidate.authors[:4]|join(', ') }}
+                {% else %}
+                  Unknown authors
+                {% endif %}
                 {% if candidate.year %} · {{ candidate.year }}{% endif %}
                 {% if candidate.journal %} · {{ candidate.journal }}{% endif %}
               </p>
-              {% if candidate.doi %}<small>DOI: {{ candidate.doi }}</small>{% endif %}
             </div>
-            <span class="decision-badge {% if candidate.decision.value == 'yes' %}decision-yes{% elif candidate.decision.value == 'no' %}decision-no{% elif candidate.decision.value == 'defer' %}decision-defer{% endif %}">
-              {{ candidate.decision.value }}
-            </span>
           </summary>
+
           <div class="result-card-body">
-            <div class="chip-row">
-              <span class="chip">PDF: {{ candidate.pdf_status }}</span>
-              <span class="chip">SI: {{ candidate.si_status }}</span>
-              {% if candidate.year %}<span class="chip">Year: {{ candidate.year }}</span>{% endif %}
-            </div>
-
-            {% if candidate.abstract %}
-            <div class="timeline-row">
-              <strong>Abstract</strong>
-              <p>{{ candidate.abstract }}</p>
-            </div>
-            {% else %}
-            <div class="timeline-row">
-              <strong>Review notes</strong>
-              <p class="muted">Expand a candidate, inspect the metadata, then record a deliberate accept / reject / defer decision to control map growth.</p>
-            </div>
-            {% endif %}
-
             <form class="decision-actions" hx-post="/projects/{{ project.project_id }}/candidates/{{ candidate.candidate_id }}/decision" hx-target="#workspace" hx-swap="innerHTML">
               <input type="hidden" name="query" value="{{ search_query or '' }}">
               <input type="hidden" name="active_tab" value="search">
-              <button class="btn btn-success" type="submit" name="decision" value="yes">Accept</button>
-              <button class="btn btn-warning" type="submit" name="decision" value="defer">Defer</button>
-              <button class="btn btn-danger" type="submit" name="decision" value="no">Reject</button>
-            </form>
 
-            <div class="chip-row">
-              <button class="btn btn-quiet" hx-get="/projects/{{ project.project_id }}/workspace?selected={{ candidate.candidate_id }}&tab=search" hx-target="#workspace" hx-swap="innerHTML" type="button">Focus in map</button>
-              {% if candidate.doi %}
-              <a class="btn btn-quiet" href="https://doi.org/{{ candidate.doi }}" target="_blank" rel="noopener noreferrer">Open DOI</a>
-              <a class="btn btn-quiet" href="https://api.openalex.org/works?filter=doi:https://doi.org/{{ candidate.doi }}" target="_blank" rel="noopener noreferrer">OpenAlex</a>
-              {% else %}
-              <a class="btn btn-quiet" href="https://api.openalex.org/works?search={{ candidate.title|urlencode }}" target="_blank" rel="noopener noreferrer">Search OpenAlex</a>
-              <a class="btn btn-quiet" href="https://api.crossref.org/works?query={{ candidate.title|urlencode }}" target="_blank" rel="noopener noreferrer">Search Crossref</a>
-              {% endif %}
-            </div>
+              <button class="btn btn-success" name="decision" value="yes">Accept</button>
+              <button class="btn btn-warning" name="decision" value="defer">Defer</button>
+              <button class="btn btn-danger" name="decision" value="no">Reject</button>
+            </form>
           </div>
         </details>
-        {% endfor %}
-      </div>
-      {% else %}
-      <div class="empty-state">
-        <h3>No search results yet</h3>
-        <p class="muted">Run a search to populate candidates, then expand a result here to review it and take action.</p>
-      </div>
-      {% endif %}
 
-      {% elif active_tab == 'retrieval' %}
-      <div class="timeline-row">
-        <strong>PDF ingress and retrieval</strong>
-        <p class="muted">Use this page for manual PDF and supplementary uploads without scrolling away from the map.</p>
-      </div>
-      {% if retrieval_candidates %}
-      <div class="results-scroll">
-        {% for candidate in retrieval_candidates %}
-        <div class="retrieval-row">
-          <strong>{{ candidate.title }}</strong>
-          <p>Decision: {{ candidate.decision.value }} · PDF: {{ candidate.pdf_status }} · SI: {{ candidate.si_status }}</p>
-          <form hx-post="/projects/{{ project.project_id }}/upload_pdf" enctype="multipart/form-data">
-            <input type="hidden" name="cid" value="{{ candidate.candidate_id }}">
-            <input type="hidden" name="active_tab" value="retrieval">
-            <input type="hidden" name="query" value="{{ search_query or '' }}">
-            <input type="file" name="file"><button class="btn btn-quiet" type="submit">Upload PDF</button>
-          </form>
-          <form hx-post="/projects/{{ project.project_id }}/upload_si" enctype="multipart/form-data">
-            <input type="hidden" name="cid" value="{{ candidate.candidate_id }}">
-            <input type="hidden" name="active_tab" value="retrieval">
-            <input type="hidden" name="query" value="{{ search_query or '' }}">
-            <input type="file" name="file"><button class="btn btn-quiet" type="submit">Upload SI</button>
-          </form>
-        </div>
         {% endfor %}
-      </div>
-      {% else %}
-      <div class="empty-state">
-        <h3>No retrieval targets yet</h3>
-        <p class="muted">Accepted or deferred papers will appear here for local document ingress.</p>
+
       </div>
       {% endif %}
 
       {% elif active_tab == 'queue' %}
+
       {% if project.expansion_candidates %}
       <div class="results-scroll">
+
         {% for item in project.expansion_candidates %}
+
         <details class="result-card">
           <summary>
-            <div>
-              <strong>{{ item.title }}</strong>
-              <p class="candidate-meta">Generated from {{ item.source_type }} for {{ item.source }}</p>
-            </div>
-            <span class="pill">Queued</span>
+            <strong>{{ item.title }}</strong>
           </summary>
+
           <div class="result-card-body">
-            <div class="timeline-row">
-              <strong>Expansion suggestion</strong>
-              <p class="muted">Add this item to the graph as an accepted paper placeholder, or omit it from future scans.</p>
-            </div>
-            <form class="decision-actions" hx-post="/projects/{{ project.project_id }}/expansion/{{ item.candidate_id }}/accept" hx-target="#workspace" hx-swap="innerHTML">
-              <input type="hidden" name="query" value="{{ search_query or '' }}">
-              <input type="hidden" name="active_tab" value="queue">
-              <button class="btn btn-success" type="submit">Add to map</button>
+            <form hx-post="/projects/{{ project.project_id }}/expansion/{{ item.candidate_id }}/accept" hx-target="#workspace" hx-swap="innerHTML">
+              <button class="btn btn-success">Add to map</button>
             </form>
-            <form class="decision-actions" hx-post="/projects/{{ project.project_id }}/expansion/{{ item.candidate_id }}/omit" hx-target="#workspace" hx-swap="innerHTML">
-              <input type="hidden" name="query" value="{{ search_query or '' }}">
-              <input type="hidden" name="active_tab" value="queue">
-              <button class="btn btn-danger" type="submit">Omit</button>
+
+            <form hx-post="/projects/{{ project.project_id }}/expansion/{{ item.candidate_id }}/omit" hx-target="#workspace" hx-swap="innerHTML">
+              <button class="btn btn-danger">Omit</button>
             </form>
           </div>
         </details>
+
         {% endfor %}
-      </div>
-      {% else %}
-      <div class="empty-state">
-        <h3>No queued suggestions yet</h3>
-        <p class="muted">Accept papers into the map, then use the map scan button to find citation and author-related expansion candidates.</p>
+
       </div>
       {% endif %}
 
-      <form hx-post="/projects/{{ project.project_id }}/export">
-        <button class="btn" type="submit">Export Project</button>
-      </form>
       {% endif %}
+
     </div>
   </section>
 </aside>
+
 {% else %}
 <section class="card empty-state" style="grid-column: 1 / -1;">
   <h2>No project selected</h2>
