@@ -1,5 +1,5 @@
 LIVE PROJECT CONTEXT
-Generated: 2026-07-02T11:45:44.023531+00:00
+Generated: 2026-07-02T11:53:12.804160+00:00
 Repository root: /Users/fwilson/Documents/Data/litmap_slim
 ===== PROJECT INTENT =====
 
@@ -130,7 +130,7 @@ uvicorn app.main:app --reload
 ===== GIT SNAPSHOT =====
 
 Branch: main
-Commit: c187cca4948946c469c2536751cf72adafaa6d87
+Commit: 191a17ada214e85a58e33d7756e35f831a2cd74b
 
 Status:
 D .venv/lib/python3.9/site-packages/__pycache__/py.cpython-39.pyc
@@ -238,11 +238,44 @@ D .venv/lib/python3.9/site-packages/__pycache__/py.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/anyio/streams/__pycache__/memory.cpython-39-pytest-8.4.2.pyc
  D .venv/lib/python3.9/site-packages/anyio/streams/__pycache__/stapled.cpython-39-pytest-8.4.2.pyc
  D .venv/lib/python3.9/site-packages/anyio/streams/__pycache__/tls.cpython-39-pytest-8.4.2.pyc
+ D .venv/lib/python3.9/site-packages/certifi/__pycache__/__init__.cpython-39.pyc
+ D .venv/lib/python3.9/site-packages/certifi/__pycache__/core.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/click/__pycache__/_compat.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/click/__pycache__/types.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/fastapi/__pycache__/testclient.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/fastapi/__pycache__/utils.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/fastapi/openapi/__pycache__/constants.cpython-39.pyc
+ D .venv/lib/python3.9/site-packages/httpcore/__pycache__/__init__.cpython-39.pyc
+ D .venv/lib/python3.9/site-packages/httpcore/__pycache__/_api.cpython-39.pyc
+ D .venv/lib/python3.9/site-packages/httpcore/__pycache__/_exceptions.cpython-39.pyc
+ D .venv/lib/python3.9/site-packages/httpcore/__pycache__/_models.cpython-39.pyc
+ D .venv/lib/python3.9/site-packages/httpcore/__pycache__/_ssl.cpython-39.pyc
+ D .venv/lib/python3.9/site-packages/httpcore/__pycache__/_synchronization.cpython-39.pyc
+ D .venv/lib/python3.9/site-packages/httpcore/__pycache__/_trace.cpython-39.pyc
+ D .venv/lib/python3.9/site-packages/httpcore/__pycache__/_utils.cpython-39.pyc
+ D .venv/lib/python3.9/site-packages/httpcore/_async/__pycache__/__init__.cpython-39.pyc
+ D .venv/lib/python3.9/site-packages/httpcore/_async/__pycache__/connection.cpython-39.pyc
+ D .venv/lib/python3.9/site-packages/httpcore/_async/__pycache__/connection_pool.cpython-39.pyc
+ D .venv/lib/python3.9/site-packages/httpcore/_async/__pycache__/http11.cpython-39.pyc
+ D .venv/lib/python3.9/site-packages/httpcore/_async/__pycache__/http2.cpython-39.pyc
+ D .venv/lib/python3.9/site-packages/httpcore/_async/__pycache__/http_proxy.cpython-39.pyc
+ D .venv/lib/python3.9/site-packages/httpcore/_async/__pycache__/interfaces.cpython-39.pyc
+ D .venv/lib/python3.9/site-packages/httpcore/_async/__pycache__/socks_proxy.cpython-39.pyc
+ D .venv/lib/python3.9/site-packages/httpcore/_backends/__pycache__/__init__.cpython-39.pyc
+ D .venv/lib/python3.9/site-packages/httpcore/_backends/__pycache__/anyio.cpython-39.pyc
+ D .venv/lib/python3.9/site-packages/httpcore/_backends/__pycache__/auto.cpython-39.pyc
+ D .venv/lib/python3.9/site-packages/httpcore/_backends/__pycache__/base.cpython-39.pyc
+ D .venv/lib/python3.9/site-packages/httpcore/_backends/__pycache__/mock.cpython-39.pyc
+ D .venv/lib/python3.9/site-packages/httpcore/_backends/__pycache__/sync.cpython-39.pyc
+ D .venv/lib/python3.9/site-packages/httpcore/_backends/__pycache__/trio.cpython-39.pyc
+ D .venv/lib/python3.9/site-packages/httpcore/_sync/__pycache__/__init__.cpython-39.pyc
+ D .venv/lib/python3.9/site-packages/httpcore/_sync/__pycache__/connection.cpython-39.pyc
+ D .venv/lib/python3.9/site-packages/httpcore/_sync/__pycache__/connection_pool.cpython-39.pyc
+ D .venv/lib/python3.9/site-packages/httpcore/_sync/__pycache__/http11.cpython-39.pyc
+ D .venv/lib/python3.9/site-packages/httpcore/_sync/__pycache__/http2.cpython-39.pyc
+ D .venv/lib/python3.9/site-packages/httpcore/_sync/__pycache__/http_proxy.cpython-39.pyc
+ D .venv/lib/python3.9/site-packages/httpcore/_sync/__pycache__/interfaces.cpython-39.pyc
+ D .venv/lib/python3.9/site-packages/httpcore/_sync/__pycache__/socks_proxy.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/idna/__pycache__/core.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/iniconfig/__pycache__/__init__.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/iniconfig/__pycache__/_parse.cpython-39.pyc
@@ -266,7 +299,6 @@ D .venv/lib/python3.9/site-packages/__pycache__/py.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/pydantic/__pycache__/version.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/pydantic/_internal/__pycache__/_config.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/pydantic/_internal/__pycache__/_core_utils.cpython-39.pyc
- M .venv/lib/python3.9/site-packages/pydantic/_internal/__pycache__/_decorators.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/pydantic/_internal/__pycache__/_discriminated_union.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/pydantic/_internal/__pycache__/_fields.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/pydantic/_internal/__pycache__/_known_annotated_metadata.cpython-39.pyc
@@ -274,7 +306,6 @@ D .venv/lib/python3.9/site-packages/__pycache__/py.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/pydantic/v1/__pycache__/class_validators.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/pydantic/v1/__pycache__/main.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/pydantic/v1/__pycache__/networks.cpython-39.pyc
- M .venv/lib/python3.9/site-packages/pydantic/v1/__pycache__/schema.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/pydantic/v1/__pycache__/types.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/pydantic/v1/__pycache__/utils.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/pydantic/v1/__pycache__/validators.cpython-39.pyc
@@ -303,21 +334,18 @@ D .venv/lib/python3.9/site-packages/__pycache__/py.cpython-39.pyc
  D .venv/lib/python3.9/site-packages/tomli/__pycache__/_re.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/typing_inspection/__pycache__/introspection.cpython-39.pyc
  M .venv/lib/python3.9/site-packages/uvicorn/middleware/__pycache__/proxy_headers.cpython-39.pyc
+ M app/__pycache__/expand.cpython-39.pyc
+ M app/__pycache__/graph.cpython-39.pyc
  M app/__pycache__/main.cpython-39.pyc
  M app/__pycache__/models.cpython-39.pyc
  M app/__pycache__/search.cpython-39.pyc
  M app/main.py
  M app/static/app.css
- M app/static/app.js
- M app/templates/partials/workspace.html
  M scripts/__pycache__/_context_common.cpython-39.pyc
  D tests/__pycache__/conftest.cpython-39-pytest-8.4.2.pyc
  D tests/__pycache__/test_app.cpython-39-pytest-8.4.2.pyc
  D tests/__pycache__/test_store.cpython-39-pytest-8.4.2.pyc
  D tests/__pycache__/test_tools.cpython-39-pytest-8.4.2.pyc
-?? css_restore_fix.zip
-?? data/projects/test1.json
-?? workspace_fix.zip
 
 ===== AUTOMATED CHECKS =====
 
@@ -404,7 +432,7 @@ tests/test_app.py::test_create_project_and_search
 - app/config.py (709 bytes)
 - app/expand.py (2275 bytes)
 - app/graph.py (6532 bytes) [priority]
-- app/main.py (7346 bytes) [priority]
+- app/main.py (4880 bytes) [priority]
 - app/models.py (4837 bytes) [priority]
 - app/providers/base.py (219 bytes)
 - app/providers/crossref.py (1624 bytes)
@@ -412,7 +440,7 @@ tests/test_app.py::test_create_project_and_search
 - app/providers/openalex.py (1637 bytes)
 - app/providers/semantic_scholar.py (1008 bytes)
 - app/search.py (4535 bytes) [priority]
-- app/static/app.css (2146 bytes)
+- app/static/app.css (564 bytes)
 - app/static/app.js (711 bytes)
 - app/store.py (1872 bytes) [priority]
 - app/templates/page.html (1474 bytes)

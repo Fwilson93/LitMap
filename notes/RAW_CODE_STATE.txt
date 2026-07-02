@@ -11,7 +11,7 @@ app/__init__.py | size=0 bytes
 app/config.py | size=709 bytes
 app/expand.py | size=2275 bytes
 app/graph.py | size=6532 bytes [priority]
-app/main.py | size=7346 bytes [priority]
+app/main.py | size=4880 bytes [priority]
 app/models.py | size=4837 bytes [priority]
 app/providers/base.py | size=219 bytes
 app/providers/crossref.py | size=1624 bytes
@@ -19,7 +19,7 @@ app/providers/mock.py | size=9 bytes
 app/providers/openalex.py | size=1637 bytes
 app/providers/semantic_scholar.py | size=1008 bytes
 app/search.py | size=4535 bytes [priority]
-app/static/app.css | size=2146 bytes
+app/static/app.css | size=564 bytes
 app/static/app.js | size=711 bytes
 app/store.py | size=1872 bytes [priority]
 app/templates/page.html | size=1474 bytes
@@ -443,12 +443,12 @@ def render_graph_svg(
 ===== FILE: app/main.py =====
 
 Path: app/main.py
-Size: 7346 bytes
+Size: 4880 bytes
 ```py
 from pathlib import Path
 from typing import Optional
 
-from fastapi import FastAPI, File, Form, Request, UploadFile
+from fastapi import FastAPI, Form, Request
 from fastapi.responses import HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -468,17 +468,14 @@ templates = Jinja2Templates(directory="app/templates")
 
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
-# ✅ Fix favicon 404
 @app.get("/favicon.ico")
 def favicon():
     return Response(status_code=204)
 
-
 FIXED_SEARCH_LIMIT = 8
-SCAN_TARGET_LIMIT = 3
 
 
-def _resolve_selected_candidate(project, selected_candidate_id: str = ""):
+def _resolve_selected_candidate(project, selected_candidate_id=""):
     if not project or not project.candidates:
         return None
 
@@ -488,126 +485,45 @@ def _resolve_selected_candidate(project, selected_candidate_id: str = ""):
         except KeyError:
             pass
 
-    visible = project.visible_candidates(FIXED_SEARCH_LIMIT)
-    if visible:
-        return visible[0]
-
-    return project.candidates[0]
+    return project.candidates[0] if project.candidates else None
 
 
-def _merge_expansion_candidates(project, incoming) -> int:
-    accepted_ids = {c.candidate_id for c in project.candidates}
-    seen = {c.candidate_id for c in project.expansion_candidates}
-
-    added = 0
-
-    for item in incoming:
-        raw_id = item.candidate_id.removeprefix("exp-")
-
-        if item.candidate_id in project.blacklist or raw_id in project.blacklist:
-            continue
-
-        if raw_id in accepted_ids or item.candidate_id in accepted_ids:
-            continue
-
-        if item.candidate_id in seen:
-            continue
-
-        project.expansion_candidates.append(item)
-        seen.add(item.candidate_id)
-        added += 1
-
-    return added
-
-
-def _find_expansion_candidate(project, eid: str):
-    for item in project.expansion_candidates:
-        if item.candidate_id == eid:
-            return item
-    raise KeyError(eid)
-
-
-def _ensure_candidate_from_expansion(project, item):
-    cid = item.candidate_id.removeprefix("exp-")
-
-    try:
-        candidate = project.get_candidate(cid)
-        candidate.title = candidate.title or item.title
-    except KeyError:
-        candidate = Candidate(
-            candidate_id=cid,
-            title=item.title,
-            authors=[],
-            journal="",
-            year=None,
-            doi=None,
-            abstract="",
-            reasons=[f"queue:{item.source_type}"] if item.source_type else [],
-            keywords=[],
-            decision=Decision.UNREVIEWED,
-        )
-        project.candidates.append(candidate)
-
-    return candidate
-
-
-def _workspace_context(project=None, *, query="", status_message="", status_level="info",
-                       selected_candidate_id="", active_tab="search"):
-
-    projects = store.list_projects()
-
+def _workspace_context(project=None, *, query="", selected_candidate_id="", active_tab="search", status_message="", status_level="info"):
     selected = _resolve_selected_candidate(project, selected_candidate_id)
 
     graph_svg = ""
-    visible_candidates = []
-    retrieval_candidates = []
-
     if project:
         graph_svg = render_graph_svg(
             project.graph,
             selected.candidate_id if selected else None,
             project.project_id,
-            "search",
         )
-
-        visible_candidates = project.visible_candidates(FIXED_SEARCH_LIMIT)
-
-        retrieval_candidates = [
-            c for c in project.candidates
-            if c.decision in {Decision.YES, Decision.DEFER}
-            or c.local_pdf_path
-            or c.local_si_path
-        ]
 
     return {
         "app_name": settings.app_name,
-        "projects": projects,
+        "projects": store.list_projects(),
         "project": project,
-        "visible_candidates": visible_candidates,
-        "retrieval_candidates": retrieval_candidates,
+        "visible_candidates": project.visible_candidates(FIXED_SEARCH_LIMIT) if project else [],
         "search_query": query,
-        "status_message": status_message,
-        "status_level": status_level,
         "selected_candidate": selected,
         "selected_candidate_id": selected.candidate_id if selected else "",
         "graph_svg": graph_svg,
         "accepted_count": sum(1 for c in project.candidates if c.decision == Decision.YES) if project else 0,
         "deferred_count": sum(1 for c in project.candidates if c.decision == Decision.DEFER) if project else 0,
         "rejected_count": sum(1 for c in project.candidates if c.decision == Decision.NO) if project else 0,
-        "fixed_search_limit": FIXED_SEARCH_LIMIT,
         "active_tab": active_tab,
+        "status_message": status_message,
+        "status_level": status_level,
     }
 
 
-def _render_workspace(request: Request, project=None, **kwargs):
+def _render_workspace(request, project, **kwargs):
     context = _workspace_context(project, **kwargs)
     context["request"] = request
     return templates.TemplateResponse("partials/workspace_bundle.html", context)
 
 
-# ----------------------------
-# ROUTES (FULLY RESTORED)
-# ----------------------------
+# ROUTES
 
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request):
@@ -619,56 +535,35 @@ def index(request: Request):
 
 
 @app.post("/projects", response_class=HTMLResponse)
-def create_project(request: Request, title: str = Form(...), description: str = Form("")):
-    project = store.create_project(title, description)
-    return _render_workspace(
-        request,
-        project,
-        status_message="Project created.",
-        status_level="success",
-    )
-
-
-@app.get("/projects/{pid}", response_class=HTMLResponse)
-def project_page(request: Request, pid: str, selected: str = "", tab: str = "search"):
-    project = store.get(pid)
-    context = _workspace_context(project, selected_candidate_id=selected, active_tab=tab)
-    context["request"] = request
-    return templates.TemplateResponse("page.html", context)
+def create_project(request: Request, title: str = Form(...)):
+    project = store.create_project(title)
+    return _render_workspace(request, project, status_message="Project created.", status_level="success")
 
 
 @app.get("/projects/{pid}/workspace", response_class=HTMLResponse)
-def project_workspace(request: Request, pid: str, selected: str = "", tab: str = "search"):
+def load_workspace(request: Request, pid: str):
     project = store.get(pid)
-    return _render_workspace(request, project, selected_candidate_id=selected, active_tab=tab)
+    return _render_workspace(request, project)
 
 
 @app.post("/projects/{pid}/search", response_class=HTMLResponse)
 def search_project(request: Request, pid: str, query: str = Form(...)):
     project = store.get(pid)
+    results = run_search(query, limit=FIXED_SEARCH_LIMIT)
 
-    try:
-        results = run_search(query, limit=FIXED_SEARCH_LIMIT)
-        project.upsert_candidates(results, query=query)
-        status = "Search complete."
-        level = "success"
-    except Exception as e:
-        status = f"Search failed: {e}"
-        level = "error"
-
+    project.upsert_candidates(results, query=query)
     store.save(project)
 
     return _render_workspace(
         request,
         project,
         query=query,
-        status_message=status,
-        status_level=level,
+        selected_candidate_id=results[0].candidate_id if results else ""
     )
 
 
 @app.post("/projects/{pid}/candidates/{cid}/decision", response_class=HTMLResponse)
-def decide_candidate(request: Request, pid: str, cid: str, decision: str = Form(...)):
+def decide(request: Request, pid: str, cid: str, decision: str = Form(...)):
     project = store.get(pid)
 
     candidate = project.set_decision(cid, Decision(decision))
@@ -678,11 +573,23 @@ def decide_candidate(request: Request, pid: str, cid: str, decision: str = Form(
 
     store.save(project)
 
-    return _render_workspace(
-        request,
-        project,
-        selected_candidate_id=cid,
-    )
+    return _render_workspace(request, project, selected_candidate_id=cid)
+
+
+# ✅ CRITICAL: map expansion restored
+@app.post("/projects/{pid}/scan_map", response_class=HTMLResponse)
+def scan_map(request: Request, pid: str):
+    project = store.get(pid)
+
+    accepted = [c for c in project.candidates if c.decision == Decision.YES]
+
+    for candidate in accepted[:3]:
+        new_items = expand_from_candidate(candidate)
+        project.expansion_candidates.extend(new_items)
+
+    store.save(project)
+
+    return _render_workspace(request, project, active_tab="queue")
 ```
 
 ===== FILE: app/models.py =====
@@ -1183,132 +1090,51 @@ def run_search(query: str, limit: int = 12):
 ===== FILE: app/static/app.css =====
 
 Path: app/static/app.css
-Size: 2146 bytes
+Size: 564 bytes
 ```css
-:root {
-  color-scheme: dark;
-  --card: rgba(18, 26, 48, 0.9);
-  --line: rgba(145, 167, 214, 0.12);
-  --text: #ecf2ff;
-  --muted: #98a7c9;
-  --primary: #6aa9ff;
-  --primary-2: #7c4dff;
-  --success: #2ed3a0;
-  --warning: #f8b84e;
-  --danger: #ff6f91;
-  --chip: rgba(255, 255, 255, 0.06);
-  --shadow: 0 24px 80px rgba(5, 8, 18, 0.45);
-  --radius: 22px;
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-}
-
-* { box-sizing: border-box; }
-
 body {
   margin: 0;
   min-height: 100vh;
   background: #070a14;
-  color: var(--text);
-  overflow: hidden;
-}
+  color: white;
 
-.shell {
-  display: grid;
-  grid-template-columns: minmax(250px, 0.9fr) minmax(0, 3.1fr);
-  gap: 18px;
-  padding: 18px;
-  height: 100vh;
-}
-
-.sidebar {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
+  /* ✅ FIX */
   overflow: auto;
 }
 
 .workspace {
   display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(360px, 1fr);
+  grid-template-columns: 2fr 1fr;
   gap: 18px;
+  height: 100vh;
+}
+
+/* ✅ FIX: make panels scrollable */
+.map-panel {
+  overflow: auto;
 }
 
 .workspace-right {
   display: flex;
   flex-direction: column;
-  min-height: 0;
-}
-
-.card {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 18px;
-}
-
-.map-panel {
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
-  gap: 14px;
-}
-
-.map-frame {
-  min-height: 400px;
-  background: #000;
-  border-radius: 18px;
+  overflow: hidden;
 }
 
 .right-panel-card {
-  display: grid;
-  grid-template-rows: auto auto auto minmax(0, 1fr);
-  gap: 12px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .tab-scroll {
-  overflow: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  flex: 1;
+  overflow-y: auto;
 }
 
-.results-scroll {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.result-card {
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  background: rgba(255,255,255,0.03);
-}
-
+/* preserve spacing */
 .result-card-body {
   padding: 12px;
 }
-
-.decision-actions {
-  display: flex;
-  gap: 10px;
-  margin-top: 10px;
-}
-
-.tab-bar {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-}
-
-.btn {
-  border-radius: 14px;
-  padding: 8px 12px;
-  cursor: pointer;
-}
-
-.btn-primary { background: var(--primary); }
-.btn-success { background: var(--success); }
-.btn-warning { background: var(--warning); }
-.btn-danger { background: var(--danger); }
 ```
 
 ===== FILE: app/static/app.js =====
