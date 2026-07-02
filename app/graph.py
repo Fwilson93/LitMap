@@ -73,11 +73,15 @@ def _candidate_id_from_node(node_id: str) -> Optional[str]:
     return None
 
 
-def _workspace_href(project_id: Optional[str], node_id: str, active_tab: str = "search") -> Optional[str]:
-    if not project_id:
+def _full_page_href(project_id: Optional[str], candidate_id: Optional[str], active_tab: str = "search") -> Optional[str]:
+    if not project_id or not candidate_id:
         return None
-    candidate_id = _candidate_id_from_node(node_id)
-    if not candidate_id:
+    qp = f"selected={quote(candidate_id)}&tab={quote(active_tab)}"
+    return f"/projects/{quote(project_id)}?{qp}"
+
+
+def _workspace_href(project_id: Optional[str], candidate_id: Optional[str], active_tab: str = "search") -> Optional[str]:
+    if not project_id or not candidate_id:
         return None
     qp = f"selected={quote(candidate_id)}&tab={quote(active_tab)}"
     return f"/projects/{quote(project_id)}/workspace?{qp}"
@@ -114,15 +118,18 @@ def render_graph_svg(
             continue
         x1, y1 = positions[edge.source]
         x2, y2 = positions[edge.target]
-        href = _workspace_href(project_id, edge.source, active_tab) or _workspace_href(project_id, edge.target, active_tab)
+        source_candidate = _candidate_id_from_node(edge.source)
+        target_candidate = _candidate_id_from_node(edge.target)
+        candidate_id = source_candidate or target_candidate
+        full_href = _full_page_href(project_id, candidate_id, active_tab)
+        workspace_href = _workspace_href(project_id, candidate_id, active_tab)
         line = (
             f'<line x1="{x1:.1f}" y1="{y1:.1f}" x2="{x2:.1f}" y2="{y2:.1f}" '
             f'class="graph-edge" data-source="{escape(edge.source)}" data-target="{escape(edge.target)}"/>'
         )
-        if href:
+        if full_href and workspace_href:
             pieces.append(
-                f'<a href="{escape(href)}" hx-get="{escape(href)}" hx-target="#workspace" '
-                f'hx-swap="innerHTML" class="graph-link">{line}</a>'
+                f'<a href="{escape(full_href)}" data-workspace-url="{escape(workspace_href)}" class="graph-link">{line}</a>'
             )
         else:
             pieces.append(line)
@@ -136,11 +143,12 @@ def render_graph_svg(
             f'filter="url(#glow)" data-node-id="{escape(node.node_id)}"/>'
             f'<text x="{x:.1f}" y="{y + 30:.1f}" text-anchor="middle" class="graph-label">{escape(node.label[:44])}</text>'
         )
-        href = _workspace_href(project_id, node.node_id, active_tab)
-        if href:
+        candidate_id = _candidate_id_from_node(node.node_id)
+        full_href = _full_page_href(project_id, candidate_id, active_tab)
+        workspace_href = _workspace_href(project_id, candidate_id, active_tab)
+        if full_href and workspace_href:
             pieces.append(
-                f'<a href="{escape(href)}" hx-get="{escape(href)}" hx-target="#workspace" '
-                f'hx-swap="innerHTML" class="graph-link">{circle}</a>'
+                f'<a href="{escape(full_href)}" data-workspace-url="{escape(workspace_href)}" class="graph-link">{circle}</a>'
             )
         else:
             pieces.append(circle)

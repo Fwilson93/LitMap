@@ -8,8 +8,10 @@
       {% endif %}
     </div>
     <div class="chip-row">
-      <span class="pill">{{ accepted_count }} accepted</span>
-      <span class="pill">{{ project.expansion_candidates|length }} queued</span>
+      <span class="pill">Accepted {{ accepted_count }}</span>
+      <span class="pill">Deferred {{ deferred_count }}</span>
+      <span class="pill">Rejected {{ rejected_count }}</span>
+      <span class="pill">Queued {{ project.expansion_candidates|length }}</span>
     </div>
   </div>
 
@@ -34,18 +36,6 @@
     </button>
     {% endif %}
   </div>
-
-  <div class="acquisition-grid">
-    <div class="mini-stat"><span>Accepted</span><strong>{{ accepted_count }}</strong></div>
-    <div class="mini-stat"><span>Deferred</span><strong>{{ deferred_count }}</strong></div>
-    <div class="mini-stat"><span>Rejected</span><strong>{{ rejected_count }}</strong></div>
-    <div class="mini-stat"><span>Visible search set</span><strong>{{ visible_candidates|length }}</strong></div>
-  </div>
-
-  <div class="timeline-row">
-    <strong>Map interaction</strong>
-    <p class="muted">Accepting a paper now updates the map immediately without also running expansion lookups. Expansion is a deliberate, separate scan step so adding nodes stays smoother.</p>
-  </div>
 </section>
 
 <aside class="workspace-right">
@@ -53,22 +43,25 @@
     <div class="toolbar-row">
       <div>
         <h3>Workspace tools</h3>
-        <p class="muted">Search, retrieval, and queue are separated into tabs so nothing important is hidden below the fold.</p>
+        <p class="muted">Search, PDF ingress, and expansion queue are separate pages so the right rail stays focused.</p>
       </div>
-      <span class="pill">{{ fixed_search_limit }} result workspace</span>
+      <span class="pill">{{ fixed_search_limit }} result review set</span>
     </div>
 
-    <div class="tab-bar">
+    <div class="tab-bar" role="tablist" aria-label="Workspace pages">
       <button class="btn {% if active_tab == 'search' %}tab-active{% endif %}" hx-get="/projects/{{ project.project_id }}/workspace?selected={{ selected_candidate_id }}&tab=search" hx-target="#workspace" hx-swap="innerHTML" type="button">Search</button>
       <button class="btn {% if active_tab == 'retrieval' %}tab-active{% endif %}" hx-get="/projects/{{ project.project_id }}/workspace?selected={{ selected_candidate_id }}&tab=retrieval" hx-target="#workspace" hx-swap="innerHTML" type="button">PDF / Retrieval</button>
       <button class="btn {% if active_tab == 'queue' %}tab-active{% endif %}" hx-get="/projects/{{ project.project_id }}/workspace?selected={{ selected_candidate_id }}&tab=queue" hx-target="#workspace" hx-swap="innerHTML" type="button">Expansion Queue</button>
     </div>
 
-    <div class="tab-scroll">
-      {% if status_message %}
-      <div class="status-banner">{{ status_message }}</div>
-      {% endif %}
+    <div class="status-bar">
+      <span id="htmx-status-pill" class="status-pill status-info">Ready</span>
+      <div id="activity-status-note" class="status-note {% if status_message %}is-live status-{{ status_level }}{% endif %}" aria-live="polite">
+        {{ status_message or 'Ready.' }}
+      </div>
+    </div>
 
+    <div class="tab-scroll">
       {% if active_tab == 'search' %}
       <form class="search-form" hx-post="/projects/{{ project.project_id }}/search" hx-target="#workspace" hx-swap="innerHTML">
         <label>
@@ -149,7 +142,7 @@
       {% elif active_tab == 'retrieval' %}
       <div class="timeline-row">
         <strong>PDF ingress and retrieval</strong>
-        <p class="muted">Use this tab for manual PDF and supplementary uploads without scrolling away from the map.</p>
+        <p class="muted">Use this page for manual PDF and supplementary uploads without scrolling away from the map.</p>
       </div>
       {% if retrieval_candidates %}
       <div class="results-scroll">
@@ -180,32 +173,40 @@
       {% endif %}
 
       {% elif active_tab == 'queue' %}
-      <div class="toolbar-row">
-        <div>
-          <h4>Expansion queue</h4>
-          <p class="muted">Use the scan action to populate fresh suggestions from papers already accepted into the map.</p>
-        </div>
-        <form hx-post="/projects/{{ project.project_id }}/scan_map" hx-target="#workspace" hx-swap="innerHTML">
-          <input type="hidden" name="selected_candidate_id" value="{{ selected_candidate_id }}">
-          <input type="hidden" name="query" value="{{ search_query or '' }}">
-          <input type="hidden" name="active_tab" value="queue">
-          <button class="btn btn-primary" type="submit">Scan map</button>
-        </form>
-      </div>
-
       {% if project.expansion_candidates %}
       <div class="results-scroll">
         {% for item in project.expansion_candidates %}
-        <div class="timeline-row">
-          <strong>{{ item.title }}</strong>
-          <p class="muted">Generated from {{ item.source_type }} for {{ item.source }}</p>
-        </div>
+        <details class="result-card">
+          <summary>
+            <div>
+              <strong>{{ item.title }}</strong>
+              <p class="candidate-meta">Generated from {{ item.source_type }} for {{ item.source }}</p>
+            </div>
+            <span class="pill">Queued</span>
+          </summary>
+          <div class="result-card-body">
+            <div class="timeline-row">
+              <strong>Expansion suggestion</strong>
+              <p class="muted">Add this item to the graph as an accepted paper placeholder, or omit it from future scans.</p>
+            </div>
+            <form class="decision-actions" hx-post="/projects/{{ project.project_id }}/expansion/{{ item.candidate_id }}/accept" hx-target="#workspace" hx-swap="innerHTML">
+              <input type="hidden" name="query" value="{{ search_query or '' }}">
+              <input type="hidden" name="active_tab" value="queue">
+              <button class="btn btn-success" type="submit">Add to map</button>
+            </form>
+            <form class="decision-actions" hx-post="/projects/{{ project.project_id }}/expansion/{{ item.candidate_id }}/omit" hx-target="#workspace" hx-swap="innerHTML">
+              <input type="hidden" name="query" value="{{ search_query or '' }}">
+              <input type="hidden" name="active_tab" value="queue">
+              <button class="btn btn-danger" type="submit">Omit</button>
+            </form>
+          </div>
+        </details>
         {% endfor %}
       </div>
       {% else %}
       <div class="empty-state">
         <h3>No queued suggestions yet</h3>
-        <p class="muted">Accept papers into the map, then scan the map to find citation and author-related expansion candidates.</p>
+        <p class="muted">Accept papers into the map, then use the map scan button to find citation and author-related expansion candidates.</p>
       </div>
       {% endif %}
 

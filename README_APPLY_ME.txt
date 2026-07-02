@@ -1,20 +1,19 @@
-LitMap Slim speed + tabbed rails bundle
+LitMap Slim status + queue controls bundle
 
 Included replacement files:
 - app/graph.py
 - app/main.py
-- app/models.py
 - app/static/app.css
 - app/static/app.js
 - app/templates/partials/workspace.html
 
 What this changes:
-- removes the forced smooth-scroll after every HTMX swap
-- separates search, PDF ingress/retrieval, and expansion queue into tabs on the right rail
-- removes extra functionality panels from below the search results and below the map
-- adds a dedicated "Scan map for expansion suggestions" action
-- makes Accept/Reject/Defer faster by no longer running expansion automatically during node add
-- limits review to the current visible search result set while keeping cached candidates in the project
+- adds visible working / success / warning / error status feedback
+- fixes graph-node clicks so they stay inside the workspace instead of loading the partial route as a whole page
+- removes the duplicate scan-map button and keeps one clear map scan action
+- compresses accepted / deferred / rejected / queued counts into compact pills
+- adds clickable expansion queue items with Add to map and Omit actions
+- makes the right rail tabs look more like distinct pages
 
 Apply by copying these files into the repository root, preserving paths.
 

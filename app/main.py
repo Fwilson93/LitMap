@@ -9,7 +9,7 @@ from fastapi.templating import Jinja2Templates
 from app.config import get_settings
 from app.expand import expand_from_candidate
 from app.graph import render_graph_svg, update_graph_for_candidate
-from app.models import Decision
+from app.models import Candidate, Decision
 from app.search import run_search
 from app.store import ProjectStore
 
@@ -56,6 +56,35 @@ def _merge_expansion_candidates(project, incoming) -> int:
     return added
 
 
+def _find_expansion_candidate(project, expansion_id: str):
+    for item in project.expansion_candidates:
+        if item.candidate_id == expansion_id:
+            return item
+    raise KeyError(expansion_id)
+
+
+def _ensure_candidate_from_expansion(project, expansion_item):
+    candidate_id = expansion_item.candidate_id.removeprefix("exp-")
+    try:
+        candidate = project.get_candidate(candidate_id)
+        candidate.title = candidate.title or expansion_item.title
+    except KeyError:
+        candidate = Candidate(
+            candidate_id=candidate_id,
+            title=expansion_item.title,
+            authors=[],
+            journal="",
+            year=None,
+            doi=None,
+            abstract="",
+            reasons=[f"queue:{expansion_item.source_type}"] if expansion_item.source_type else [],
+            keywords=[],
+            decision=Decision.UNREVIEWED,
+        )
+        project.candidates.append(candidate)
+    return candidate
+
+
 def _render_workspace(request: Request, project=None, **kwargs):
     context = _workspace_context(project, **kwargs)
     context["request"] = request
@@ -71,6 +100,7 @@ def _workspace_context(
     *,
     query: str = "",
     status_message: str = "",
+    status_level: str = "info",
     selected_candidate_id: str = "",
     active_tab: str = "search",
 ):
@@ -84,12 +114,15 @@ def _workspace_context(
             project.graph,
             selected_candidate.candidate_id if selected_candidate else None,
             project.project_id,
+            "search",
         )
         visible_candidates = project.visible_candidates(FIXED_SEARCH_LIMIT)
         retrieval_candidates = [
             candidate
             for candidate in project.candidates
-            if candidate.decision in {Decision.YES, Decision.DEFER} or candidate.local_pdf_path or candidate.local_si_path
+            if candidate.decision in {Decision.YES, Decision.DEFER}
+            or candidate.local_pdf_path
+            or candidate.local_si_path
         ]
     accepted_count = sum(1 for candidate in project.candidates if candidate.decision == Decision.YES) if project else 0
     deferred_count = sum(1 for candidate in project.candidates if candidate.decision == Decision.DEFER) if project else 0
@@ -102,6 +135,7 @@ def _workspace_context(
         "retrieval_candidates": retrieval_candidates,
         "search_query": query,
         "status_message": status_message,
+        "status_level": status_level,
         "selected_candidate": selected_candidate,
         "selected_candidate_id": selected_candidate.candidate_id if selected_candidate else "",
         "graph_svg": graph_svg,
@@ -122,10 +156,24 @@ def index(request: Request):
     return templates.TemplateResponse(request=request, name="page.html", context=context)
 
 
+@app.get("/projects/{pid}", response_class=HTMLResponse)
+def project_page(request: Request, pid: str, selected: str = "", tab: str = "search"):
+    project = store.get(pid)
+    context = _workspace_context(project, selected_candidate_id=selected, active_tab=tab)
+    context["request"] = request
+    return templates.TemplateResponse(request=request, name="page.html", context=context)
+
+
 @app.post("/projects", response_class=HTMLResponse)
 def create_project(request: Request, title: str = Form(...), description: str = Form("")):
     project = store.create_project(title, description)
-    return _render_workspace(request, project, active_tab="search")
+    return _render_workspace(
+        request,
+        project,
+        active_tab="search",
+        status_message="Project created.",
+        status_level="success",
+    )
 
 
 @app.post("/projects/{pid}/delete", response_class=HTMLResponse)
@@ -133,7 +181,13 @@ def delete_project(request: Request, pid: str):
     store.delete_project(pid)
     projects = store.list_projects()
     project = projects[0] if projects else None
-    return _render_workspace(request, project, active_tab="search")
+    return _render_workspace(
+        request,
+        project,
+        active_tab="search",
+        status_message="Project deleted.",
+        status_level="success",
+    )
 
 
 @app.get("/projects/{pid}/workspace", response_class=HTMLResponse)
@@ -159,11 +213,15 @@ def search_project(
         except Exception:
             effective_limit = FIXED_SEARCH_LIMIT
     status_message = ""
+    status_level = "info"
     try:
         results = run_search(query, limit=effective_limit)
+        status_message = f"Search complete. Showing up to {len(results)} ranked results."
+        status_level = "success"
     except Exception as exc:
         results = []
         status_message = f"Search failed: {exc}"
+        status_level = "error"
     project.upsert_candidates(results, query=query)
     store.save(project)
     selected_candidate_id = results[0].candidate_id if results else selected_candidate_id
@@ -172,6 +230,7 @@ def search_project(
         project,
         query=query,
         status_message=status_message,
+        status_level=status_level,
         selected_candidate_id=selected_candidate_id,
         active_tab="search",
     )
@@ -189,6 +248,7 @@ def decide_candidate(
     project = store.get(pid)
     candidate = project.set_decision(cid, Decision(decision))
     status_message = ""
+    status_level = "info"
     if candidate.decision == Decision.YES:
         update_graph_for_candidate(project, candidate)
         project.expansion_candidates = [
@@ -197,16 +257,20 @@ def decide_candidate(
             if item.candidate_id not in {cid, f"exp-{cid}"}
         ]
         status_message = "Accepted and added to the map."
+        status_level = "success"
     elif candidate.decision == Decision.NO:
         status_message = "Marked as rejected."
+        status_level = "warning"
     elif candidate.decision == Decision.DEFER:
         status_message = "Deferred for later review."
+        status_level = "info"
     store.save(project)
     return _render_workspace(
         request,
         project,
         query=query,
         status_message=status_message,
+        status_level=status_level,
         selected_candidate_id=cid,
         active_tab=active_tab,
     )
@@ -223,13 +287,16 @@ def scan_map_for_expansion(
     project = store.get(pid)
     accepted = [candidate for candidate in reversed(project.candidates) if candidate.decision == Decision.YES]
     status_message = ""
+    status_level = "info"
     if not accepted:
         status_message = "Accept at least one paper before scanning the map for expansion suggestions."
+        status_level = "warning"
         return _render_workspace(
             request,
             project,
             query=query,
             status_message=status_message,
+            status_level=status_level,
             selected_candidate_id=selected_candidate_id,
             active_tab="queue",
         )
@@ -243,9 +310,11 @@ def scan_map_for_expansion(
             )
         except Exception as exc:
             status_message = f"Expansion warning: {exc}"
+            status_level = "error"
             break
     if not status_message:
         status_message = f"Map scan complete. Added {total_added} queued suggestions."
+        status_level = "success"
     store.save(project)
     focus_id = selected_candidate_id or (accepted[0].candidate_id if accepted else "")
     return _render_workspace(
@@ -253,8 +322,70 @@ def scan_map_for_expansion(
         project,
         query=query,
         status_message=status_message,
+        status_level=status_level,
         selected_candidate_id=focus_id,
         active_tab="queue",
+    )
+
+
+@app.post("/projects/{pid}/expansion/{eid}/accept", response_class=HTMLResponse)
+def accept_expansion_candidate(
+    request: Request,
+    pid: str,
+    eid: str,
+    query: str = Form(""),
+    active_tab: str = Form("queue"),
+):
+    project = store.get(pid)
+    try:
+        item = _find_expansion_candidate(project, eid)
+    except KeyError:
+        return _render_workspace(
+            request,
+            project,
+            query=query,
+            status_message="Expansion suggestion was not found.",
+            status_level="error",
+            active_tab="queue",
+        )
+    candidate = _ensure_candidate_from_expansion(project, item)
+    candidate.decision = Decision.YES
+    update_graph_for_candidate(project, candidate)
+    project.expansion_candidates = [entry for entry in project.expansion_candidates if entry.candidate_id != eid]
+    if candidate.candidate_id not in project.visible_candidate_ids:
+        project.visible_candidate_ids = [candidate.candidate_id] + [
+            cid for cid in project.visible_candidate_ids if cid != candidate.candidate_id
+        ]
+    store.save(project)
+    return _render_workspace(
+        request,
+        project,
+        query=query,
+        status_message="Queued suggestion added to the map.",
+        status_level="success",
+        selected_candidate_id=candidate.candidate_id,
+        active_tab=active_tab,
+    )
+
+
+@app.post("/projects/{pid}/expansion/{eid}/omit", response_class=HTMLResponse)
+def omit_expansion_candidate(
+    request: Request,
+    pid: str,
+    eid: str,
+    query: str = Form(""),
+    active_tab: str = Form("queue"),
+):
+    project = store.get(pid)
+    project.blacklist_item(eid)
+    store.save(project)
+    return _render_workspace(
+        request,
+        project,
+        query=query,
+        status_message="Queued suggestion omitted from future scans.",
+        status_level="warning",
+        active_tab=active_tab,
     )
 
 
@@ -281,6 +412,7 @@ def upload_pdf(
         project,
         query=query,
         status_message="PDF uploaded.",
+        status_level="success",
         selected_candidate_id=cid,
         active_tab=active_tab,
     )
@@ -309,6 +441,7 @@ def upload_si(
         project,
         query=query,
         status_message="Supplementary file uploaded.",
+        status_level="success",
         selected_candidate_id=cid,
         active_tab=active_tab,
     )
